@@ -23,6 +23,8 @@ import {
   Users,
   X,
   RotateCcw,
+  Bookmark,
+  Trophy,
 } from "lucide-react";
 
 interface FeedItem {
@@ -125,8 +127,14 @@ export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [interactedMap, setInteractedMap] = useState<Record<string, boolean>>({});
 
+  const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
+
   const handleAction = (id: string) => {
     setInteractedMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleSave = (id: string) => {
+    setSavedMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   // Convert custom user posts into feed items
@@ -168,6 +176,11 @@ export default function FeedPage() {
 
   const allFeedItems = [...userCustomFeedItems, ...defaultFeedData];
 
+  const hackathonsCount = allFeedItems.filter((i) => i.type === "hackathons").length;
+  const clubsCount = allFeedItems.filter((i) => i.type === "clubs").length;
+  const teammatesCount = allFeedItems.filter((i) => i.type === "teammates").length;
+  const projectsCount = allFeedItems.filter((i) => i.type === "projects").length;
+
   const filteredItems = allFeedItems.filter((item) => {
     const matchesTab = activeTab === "all" || item.type === activeTab;
     const matchesSearch =
@@ -188,36 +201,33 @@ export default function FeedPage() {
         <div className="mb-6 pb-6 border-b border-border/60">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-semibold border border-emerald-500/20 mb-2">
-                <Sparkles className="w-3 h-3 text-emerald-500" />
-                <span>Personalized Feed Active</span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live campus match
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  • {allFeedItems.length} verified opportunities
+                </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
                 Good evening, {userName} 👋
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Here is what is happening on campus based on your interests.
+                Here is what is happening on campus tailored to your profile.
               </p>
             </div>
 
-            {/* Quick Actions */}
+            {/* Subtle Tag Management Trigger */}
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setEditInterestsOpen(true)}
-                className="h-8 text-xs font-medium rounded-lg gap-1.5 cursor-pointer"
+                className="h-8 text-xs font-medium rounded-lg gap-1.5 cursor-pointer hover:border-primary/40"
               >
-                <SlidersHorizontal className="w-3 h-3" />
-                <span>Edit Interests</span>
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setCreateModalOpen(true)}
-                className="h-8 text-xs font-semibold rounded-lg gap-1.5 shadow-xs cursor-pointer"
-              >
-                <Plus className="w-3 h-3" />
-                <span>New Post</span>
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Manage Tags</span>
               </Button>
             </div>
           </div>
@@ -225,18 +235,27 @@ export default function FeedPage() {
           {/* Active Interest Chips */}
           <div className="flex items-center gap-1.5 flex-wrap mt-4">
             <span className="text-xs text-muted-foreground font-medium mr-1">
-              Your tags:
+              Active filters:
             </span>
             {(interests.length > 0 ? interests : ["AI", "Web Dev", "Startups"]).map((interest) => (
-              <span
+              <button
+                type="button"
                 key={interest}
                 onClick={() => setEditInterestsOpen(true)}
-                className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border/60 hover:border-primary/40 transition-colors cursor-pointer"
+                className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground border border-border/60 hover:border-primary/50 hover:bg-accent transition-colors cursor-pointer inline-flex items-center gap-1"
                 title="Click to edit preferences"
               >
-                <span>✨ {interest}</span>
-              </span>
+                <Sparkles className="w-3 h-3 text-primary/70" />
+                <span>{interest}</span>
+              </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setEditInterestsOpen(true)}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors underline underline-offset-2 ml-1 cursor-pointer"
+            >
+              + edit
+            </button>
           </div>
         </div>
 
@@ -263,7 +282,7 @@ export default function FeedPage() {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              ⚡ Hackathons
+              ⚡ Hackathons ({hackathonsCount})
             </button>
             <button
               type="button"
@@ -274,7 +293,7 @@ export default function FeedPage() {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              🏛 Clubs
+              🏛 Clubs ({clubsCount})
             </button>
             <button
               type="button"
@@ -285,7 +304,7 @@ export default function FeedPage() {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              👤 Teammates
+              👤 Teammates ({teammatesCount})
             </button>
             <button
               type="button"
@@ -296,7 +315,7 @@ export default function FeedPage() {
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
-              🛠 Projects
+              🛠 Projects ({projectsCount})
             </button>
           </div>
 
@@ -345,119 +364,148 @@ export default function FeedPage() {
           <div className="space-y-4">
             {filteredItems.map((item) => {
               const isDone = !!interactedMap[item.id];
+              const isSaved = !!savedMap[item.id];
+
               return (
-              <div
-                key={item.id}
-                className="p-5 rounded-2xl border border-border/80 bg-card shadow-xs hover:border-primary/40 hover:shadow-xs transition-all duration-200 group"
-              >
-                {/* Header row: Category Badge + Natural Status Tag (NO PERCENTAGES) */}
-                <div className="flex items-center justify-between gap-3 mb-2.5">
-                  <div className="flex items-center gap-2">
-                    {item.avatar ? (
-                      <div className="relative">
-                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
-                          {item.avatar}
-                        </span>
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-card" />
+                <div
+                  key={item.id}
+                  className="p-5 rounded-2xl border border-border/80 bg-card shadow-xs hover:border-primary/40 hover:shadow-md transition-all duration-200 group"
+                >
+                  <div className="flex items-start gap-3.5 sm:gap-4">
+                    {/* Visual Anchor */}
+                    {item.category === "Hackathon" ? (
+                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[10px] uppercase font-bold tracking-wider leading-none">OCT</span>
+                        <span className="text-base font-extrabold leading-none mt-1">18</span>
                       </div>
-                    ) : null}
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-md border ${item.badgeColor}`}>
-                      {item.category}
-                    </span>
-                  </div>
-
-                  {/* Clean natural status tag (replaces % match) */}
-                  <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
-                    {item.statusTag}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-base sm:text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
-                  {item.actionHref ? (
-                    <Link href={item.actionHref} className="hover:underline">
-                      {item.title}
-                    </Link>
-                  ) : (
-                    item.title
-                  )}
-                </h3>
-
-                {/* Meta details */}
-                <p className="text-xs text-muted-foreground font-medium mb-2.5">
-                  {item.meta}
-                </p>
-
-                {/* Description */}
-                <p className="text-xs sm:text-sm text-foreground/85 leading-relaxed mb-4">
-                  {item.description}
-                </p>
-
-                {/* Footer: Tags & Interactive Actions */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3.5 border-t border-border/50">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {item.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {item.actionHref && (
-                      <Link href={item.actionHref}>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-3 rounded-lg text-xs font-medium cursor-pointer"
-                        >
-                          Details
-                        </Button>
-                      </Link>
-                    )}
-
-                    {item.actionHref && !isDone ? (
-                      <Link href={item.actionHref}>
-                        <Button
-                          size="sm"
-                          className="h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
-                        >
-                          <span>{item.actionLabel}</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </Button>
-                      </Link>
+                    ) : item.category === "Club" ? (
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shrink-0">
+                        {item.id === "ai-club" ? "🤖" : item.id === "design-guild" ? "🎨" : "🏛️"}
+                      </div>
+                    ) : item.category === "Teammate" ? (
+                      <div className="relative w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                        {item.avatar || "RS"}
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card" title="Active student" />
+                      </div>
                     ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => handleAction(item.id)}
-                        className={`h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
-                          isDone
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
-                            : "shadow-xs"
-                        }`}
-                      >
-                        {isDone ? (
-                          <>
-                            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>{item.actionDoneLabel}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>{item.actionLabel}</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </>
-                        )}
-                      </Button>
+                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
+                        🚀
+                      </div>
                     )}
+
+                    {/* Card Content Area */}
+                    <div className="flex-1 min-w-0">
+                      {/* Category Badge + Status Tag + Bookmark */}
+                      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-md border ${item.badgeColor}`}>
+                            {item.category}
+                          </span>
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
+                            {item.statusTag}
+                          </span>
+                        </div>
+
+                        {/* Save / Bookmark Toggle */}
+                        <button
+                          type="button"
+                          onClick={() => toggleSave(item.id)}
+                          className="text-muted-foreground hover:text-primary transition-colors p-1 rounded-md hover:bg-muted/60 cursor-pointer"
+                          title={isSaved ? "Saved" : "Save opportunity"}
+                        >
+                          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-primary text-primary" : ""}`} />
+                        </button>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-base sm:text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
+                        {item.actionHref ? (
+                          <Link href={item.actionHref} className="hover:underline">
+                            {item.title}
+                          </Link>
+                        ) : (
+                          item.title
+                        )}
+                      </h3>
+
+                      {/* Meta details */}
+                      <p className="text-xs text-muted-foreground font-medium mb-2.5">
+                        {item.meta}
+                      </p>
+
+                      {/* Description */}
+                      <p className="text-xs sm:text-sm text-foreground/85 leading-relaxed mb-4">
+                        {item.description}
+                      </p>
+
+                      {/* Footer: Semantic Tags & Single Decisive CTA */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3.5 border-t border-border/50">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {item.tags.map((tag) => {
+                            const isPrize = tag.toLowerCase().includes("prize");
+                            const isOpenSpot = tag.toLowerCase().includes("spot") || tag.toLowerCase().includes("recruiting");
+                            return (
+                              <span
+                                key={tag}
+                                className={`text-[11px] px-2 py-0.5 rounded-md font-medium inline-flex items-center gap-1 ${
+                                  isPrize
+                                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20"
+                                    : isOpenSpot
+                                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"
+                                    : "bg-muted text-muted-foreground border border-border/40"
+                                }`}
+                              >
+                                {isPrize && <Trophy className="w-3 h-3 text-amber-500" />}
+                                {isOpenSpot && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
+                                {tag}
+                              </span>
+                            );
+                          })}
+                        </div>
+
+                        {/* Single Decisive CTA Button */}
+                        <div className="shrink-0 flex items-center justify-end">
+                          {item.actionHref && !isDone ? (
+                            <Link href={item.actionHref}>
+                              <Button
+                                size="sm"
+                                className="h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                              >
+                                <span>{item.actionLabel}</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleAction(item.id)}
+                              className={`h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
+                                isDone
+                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
+                                  : "shadow-xs"
+                              }`}
+                            >
+                              {isDone ? (
+                                <>
+                                  <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>{item.actionDoneLabel}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>{item.actionLabel}</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
       ) : (
         <div className="py-12 px-6 rounded-2xl border border-dashed border-border bg-card text-center max-w-md mx-auto my-6 animate-in fade-in">
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 text-muted-foreground">

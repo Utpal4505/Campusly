@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   ArrowLeft,
   MessageSquare,
@@ -334,10 +335,12 @@ export default function StudentProfilePage() {
               {/* Avatar + Main Info */}
               <div className="flex items-end gap-3.5 sm:gap-4">
                 <div className="relative">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-card text-foreground font-extrabold text-2xl sm:text-3xl flex items-center justify-center border-4 border-card shadow-md">
-                    <span className="w-full h-full rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                      {student.avatar}
-                    </span>
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-card text-foreground font-extrabold text-2xl sm:text-3xl flex items-center justify-center border-4 border-card shadow-md overflow-hidden ring-1 ring-border/80">
+                    <img
+                      src={getAnimeAvatar(slug, student.name)}
+                      alt={student.name}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
                   </div>
                   <span
                     className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card"
@@ -640,8 +643,12 @@ export default function StudentProfilePage() {
               
               <div className="flex items-start justify-between gap-3 mb-4 pb-3 border-b border-border/60">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold">
-                    ⚡
+                  <div className="w-10 h-10 rounded-xl border border-primary/25 overflow-hidden shrink-0">
+                    <img
+                      src={getAnimeAvatar(slug, student.name)}
+                      alt={student.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div>
                     <h2 className="text-base font-bold tracking-tight">

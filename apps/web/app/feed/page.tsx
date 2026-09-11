@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { useCampusStore } from "@/lib/store";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   Calendar,
   MapPin,
@@ -355,8 +356,12 @@ export default function FeedPage() {
                         {item.id === "ai-club" ? "🤖" : item.id === "design-guild" ? "🎨" : "🏛️"}
                       </div>
                     ) : item.category === "Teammate" ? (
-                      <div className="relative w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-sm font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
-                        {item.avatar || "RS"}
+                      <div className="relative w-12 h-12 rounded-xl border border-emerald-500/25 overflow-hidden shrink-0 bg-muted/20">
+                        <img
+                          src={getAnimeAvatar(item.actionHref?.replace("/people/", "") || item.id, item.title)}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
                         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card" title="Active student" />
                       </div>
                     ) : (

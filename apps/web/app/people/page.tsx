@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   ArrowLeft,
   Search,
@@ -144,11 +145,17 @@ export default function PeoplePage() {
                 className="p-5 rounded-2xl border border-border/80 bg-card shadow-xs hover:border-primary/40 hover:shadow-xs transition-all"
               >
                 <div className="flex items-start justify-between gap-3 mb-2.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center">
-                      {peer.avatar}
-                    </div>
-                    <div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Link href={`/people/${peer.slug}`} className="shrink-0">
+                      <div className="w-11 h-11 rounded-full overflow-hidden border border-border/80 hover:ring-2 hover:ring-primary/40 transition-all bg-muted/20">
+                        <img
+                          src={getAnimeAvatar(peer.slug, peer.name)}
+                          alt={peer.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </Link>
+                    <div className="min-w-0">
                       <Link
                         href={`/people/${peer.slug}`}
                         className="text-sm font-bold text-foreground hover:underline"

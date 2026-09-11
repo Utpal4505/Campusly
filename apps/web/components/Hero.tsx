@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   ArrowRight,
   Sparkles,
@@ -162,10 +163,14 @@ export default function Hero() {
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
                         {item.avatar ? (
-                          <div className="relative">
-                            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center">
-                              {item.avatar}
-                            </span>
+                          <div className="relative shrink-0">
+                            <div className="w-5 h-5 rounded-full overflow-hidden border border-border/70 bg-muted/20">
+                              <img
+                                src={getAnimeAvatar("rahul-sharma", "Rahul Sharma")}
+                                alt="Rahul Sharma"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
                             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-card" />
                           </div>
                         ) : null}

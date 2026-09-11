@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { useCampusStore } from "@/lib/store";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   ArrowLeft,
   Heart,
@@ -703,8 +704,15 @@ export default function ClubDetailPage() {
               {club.leadership[0] && (
                 <div className="p-4 rounded-2xl border border-border/70 bg-card flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
-                      {club.leadership[1]?.avatar || club.leadership[0]?.avatar}
+                    <div className="w-10 h-10 rounded-full border border-primary/20 overflow-hidden shrink-0 bg-muted/20">
+                      <img
+                        src={getAnimeAvatar(
+                          club.leadership[1]?.slug || club.leadership[0]?.slug,
+                          club.leadership[1]?.name || club.leadership[0]?.name
+                        )}
+                        alt={club.leadership[1]?.name || club.leadership[0]?.name}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-foreground">
@@ -1055,9 +1063,13 @@ export default function ClubDetailPage() {
                         className="p-3 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between gap-2 hover:border-primary/40 transition-colors"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <Link href={`/people/${leader.slug}`}>
-                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0 hover:ring-2 hover:ring-primary/40 transition-all">
-                              {leader.avatar}
+                          <Link href={`/people/${leader.slug}`} className="shrink-0">
+                            <div className="w-9 h-9 rounded-full overflow-hidden border border-border/70 hover:ring-2 hover:ring-primary/40 transition-all bg-muted/20">
+                              <img
+                                src={getAnimeAvatar(leader.slug, leader.name)}
+                                alt={leader.name}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
                           </Link>
                           <div className="min-w-0">

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCampusStore } from "@/lib/store";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   Sparkles,
   Users,
@@ -110,8 +111,12 @@ export default function AppHeader() {
               className="h-8 pl-1 pr-2.5 rounded-lg border border-border/60 bg-card hover:bg-muted/60 flex items-center gap-2 transition-colors cursor-pointer"
               title="User Profile & Interests"
             >
-              <div className="w-6 h-6 rounded-md bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
-                {userName.charAt(0).toUpperCase()}
+              <div className="w-6 h-6 rounded-md overflow-hidden border border-border/70 flex items-center justify-center bg-muted/20">
+                <img
+                  src={getAnimeAvatar(userName, "Utpal")}
+                  alt={userName}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <span className="text-xs font-semibold text-foreground hidden sm:inline-block">
                 {userName}

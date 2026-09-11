@@ -195,7 +195,7 @@ export default function FeedPage() {
       <AppHeader />
 
       {/* Main Feed Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         
         {/* Welcome Banner */}
         <div className="mb-6 pb-6 border-b border-border/60">

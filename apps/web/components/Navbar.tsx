@@ -31,10 +31,10 @@ export default function Navbar() {
               For You Feed
             </Link>
             <Link
-              href="/events/genai-hackathon"
+              href="/events"
               className="px-2.5 py-1.5 rounded-md hover:text-foreground hover:bg-muted/60 transition-colors"
             >
-              Hackathons
+              Events
             </Link>
             <Link
               href="/people"

@@ -21,7 +21,7 @@ export default function AppHeader() {
 
   const navLinks = [
     { href: "/feed", label: "For You", icon: Sparkles },
-    { href: "/events/genai-hackathon", label: "Events", icon: Calendar },
+    { href: "/events", label: "Events", icon: Calendar },
     { href: "/people", label: "People", icon: Users },
     { href: "/messages/rahul-sharma", label: "Messages", icon: MessageSquare, badge: "1" },
   ];

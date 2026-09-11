@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
+import { getEventBySlug } from "@/lib/events-data";
+import { getAnimeAvatar } from "@/lib/avatars";
 import {
   ArrowLeft,
   Heart,
@@ -19,229 +21,445 @@ import {
   Trophy,
   Clock,
   Ticket,
+  Check,
+  ShieldCheck,
+  ExternalLink,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 
 export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const slug = params?.slug as string;
+  const rawSlug = (params?.slug as string) || "genai-hackathon";
+  const event = getEventBySlug(rawSlug);
 
   const [isSaved, setIsSaved] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const handleShare = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const percentageFull = Math.round(
+    ((event.spotsTotal - event.spotsRemaining) / event.spotsTotal) * 100
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
       <AppHeader />
 
       {/* Main Event Content */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 py-6">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6">
         
-        {/* Top Breadcrumb & Actions */}
+        {/* Top Breadcrumb & Quick Actions */}
         <div className="flex items-center justify-between mb-6">
           <Link
-            href="/feed"
+            href="/events"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors group"
           >
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
-            <span>Back to For You Feed</span>
+            <span>Back to Events</span>
           </Link>
 
-          <button
-            type="button"
-            onClick={() => setIsSaved(!isSaved)}
-            className={`h-8 px-3 rounded-lg border border-border/60 bg-card flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer ${
-              isSaved ? "text-red-500 border-red-200 bg-red-500/5" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Heart className={`w-3.5 h-3.5 ${isSaved ? "fill-red-500" : ""}`} />
-            <span>{isSaved ? "Saved" : "Save"}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="h-8 px-3 rounded-lg border border-border/60 bg-card hover:bg-muted/50 flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer shadow-2xs"
+            >
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+              <span>{copiedLink ? "Copied!" : "Share"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsSaved(!isSaved)}
+              className={`h-8 px-3 rounded-lg border border-border/60 bg-card flex items-center gap-1.5 text-xs font-medium transition-colors cursor-pointer shadow-2xs ${
+                isSaved
+                  ? "text-red-500 border-red-500/30 bg-red-500/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Heart className={`w-3.5 h-3.5 ${isSaved ? "fill-red-500" : ""}`} />
+              <span>{isSaved ? "Saved" : "Save"}</span>
+            </button>
+          </div>
         </div>
-        
-        {/* Registration Success Overlay / Card if registered */}
-        {isRegistered ? (
-          <div className="py-12 px-6 rounded-3xl border border-emerald-500/30 bg-emerald-500/[0.03] text-center max-w-lg mx-auto shadow-sm animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20">
-              <CheckCircle2 className="w-9 h-9 stroke-[2.5]" />
-            </div>
 
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mb-2">
-              You&apos;re registered!
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              A pass has been reserved in your name. Bring your student ID to check in.
+        {/* Hero Visual Banner */}
+        <div className={`w-full rounded-3xl bg-gradient-to-tr ${event.gradient} p-6 sm:p-8 flex flex-col justify-between text-white relative overflow-hidden mb-8 border shadow-sm`}>
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-[size:16px_16px]" />
+
+          <div className="relative z-10 flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md ${event.categoryBadge}`}>
+              <Zap className="w-3.5 h-3.5" />
+              {event.category}
+            </span>
+
+            <span className="text-xs font-bold text-white bg-black/40 px-3 py-1 rounded-full backdrop-blur-md border border-white/15 flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>{event.prizePool}</span>
+            </span>
+          </div>
+
+          <div className="relative z-10 max-w-2xl">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-primary-foreground/80 font-bold block mb-1">
+              Lovely Professional University • Campus Initiative
+            </span>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
+              {event.title}
+            </h1>
+            <p className="text-sm sm:text-base text-white/80 font-medium mt-1.5">
+              {event.subtitle}
             </p>
+          </div>
 
-            <div className="p-4 rounded-2xl border border-border/70 bg-card text-left mb-6 space-y-2.5 shadow-2xs">
-              <div className="flex items-center justify-between text-xs pb-2 border-b border-border/50">
-                <span className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">
-                  Pass #CAMPUS-8841
-                </span>
-                <Badge variant="secondary" className="text-[10px] text-emerald-700 bg-emerald-50 border-emerald-200">
-                  Confirmed
-                </Badge>
-              </div>
-              <h3 className="font-bold text-base text-foreground">
-                GenAI Hackathon 2026
-              </h3>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-primary/70" />
-                  <span>12 September · 6:00 PM</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-primary/70" />
-                  <span>LPU Campus · Main Auditorium</span>
-                </div>
-              </div>
+          {/* Quick Stats Strip inside Banner */}
+          <div className="relative z-10 mt-6 pt-4 border-t border-white/15 flex items-center justify-between gap-4 flex-wrap text-xs text-white/90">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-amber-300 shrink-0" />
+              <span className="font-semibold">{event.date}</span>
             </div>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/feed" className="w-full sm:w-auto">
-                <Button className="w-full sm:w-auto rounded-xl px-6 font-semibold text-xs shadow-xs">
-                  Back to For You
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                onClick={() => setIsRegistered(false)}
-                className="w-full sm:w-auto rounded-xl px-5 text-xs text-muted-foreground hover:text-foreground"
-              >
-                View event details
-              </Button>
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-300 shrink-0" />
+              <span className="font-semibold">{event.venue}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-300 shrink-0" />
+              <span>{event.spotsRemaining} spots remaining</span>
             </div>
           </div>
-        ) : (
-          /* Normal Event Detail View */
-          <div>
-            {/* Event Visual Banner */}
-            <div className="w-full h-48 sm:h-64 rounded-2xl bg-gradient-to-tr from-blue-900 via-indigo-900 to-purple-950 p-6 flex flex-col justify-between text-white relative overflow-hidden mb-6 shadow-sm">
-              <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-[size:16px_16px]" />
-              
-              <div className="relative z-10 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-sm border border-white/20">
-                  <Zap className="w-3.5 h-3.5 text-amber-300" />
-                  Campus Hackathon
-                </span>
-                <span className="text-xs font-medium text-white/80 bg-black/30 px-2.5 py-1 rounded-full backdrop-blur-sm">
-                  ₹50,000 in Prizes
-                </span>
-              </div>
+        </div>
 
-              <div className="relative z-10">
-                <span className="text-xs font-mono uppercase tracking-widest text-blue-300">
-                  Flagship Event
-                </span>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-1">
-                  GENAI HACKATHON
-                </h1>
-                <p className="text-sm text-white/80 font-medium mt-1">
-                  Build. Compete. Ship.
-                </p>
-              </div>
-            </div>
-
-            {/* Host & Key Meta */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60 mb-6">
-              <div>
-                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
-                  <Zap className="w-3.5 h-3.5" />
-                  Hosted by Coding Blocks
-                </div>
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-muted-foreground mt-2">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-primary/70" />
-                    <span className="text-foreground font-medium">12 September · 6:00 PM</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-primary/70" />
-                    <span>LPU Campus (Block 32)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="sm:text-right">
-                <div className="text-2xl font-extrabold text-foreground">₹249</div>
-                <div className="text-xs text-muted-foreground">Entry fee per attendee</div>
-              </div>
-            </div>
-
+        {/* =======================================================================
+            2-COLUMN CONTENT ARCHITECTURE
+        ======================================================================= */}
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          
+          {/* LEFT COLUMN: Overview, Schedule, Rules & Mentors (Col 8) */}
+          <div className="lg:col-span-8 space-y-8">
+            
             {/* About Section */}
-            <section className="mb-8">
-              <h2 className="text-base font-bold text-foreground mb-3">
-                About the Event
+            <section className="p-6 rounded-2xl border border-border/80 bg-card shadow-2xs">
+              <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span>About the Event</span>
               </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Build innovative solutions using generative AI, large language models, and agentic workflows.
-                Compete with the top student developers on campus, showcase your prototypes to industry judges,
-                and connect with potential co-founders.
+              <p className="text-xs sm:text-sm text-foreground/85 leading-relaxed">
+                {event.about}
               </p>
             </section>
 
-            {/* What to Expect */}
-            <section className="mb-8">
-              <h2 className="text-base font-bold text-foreground mb-3">
-                What to expect
+            {/* What to Expect Cards */}
+            <section className="p-6 rounded-2xl border border-border/80 bg-card shadow-2xs">
+              <h2 className="text-base font-bold text-foreground mb-4">
+                What to Expect
               </h2>
-              <div className="grid sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3.5 rounded-xl border border-border/60 bg-card">
-                  <div className="font-semibold text-foreground mb-1">⚡ Team Challenge</div>
-                  <div className="text-muted-foreground">Teams of 2–4 builders. Solo participants matched at kickoff.</div>
-                </div>
-                <div className="p-3.5 rounded-xl border border-border/60 bg-card">
-                  <div className="font-semibold text-foreground mb-1">🤝 Mentors & Network</div>
-                  <div className="text-muted-foreground">Hands-on mentorship from senior builders and tech alumni.</div>
-                </div>
-                <div className="p-3.5 rounded-xl border border-border/60 bg-card">
-                  <div className="font-semibold text-foreground mb-1">🏆 Prizes & Demos</div>
-                  <div className="text-muted-foreground">Pitch live on stage. Winner certificates and cash pool.</div>
-                </div>
+              <div className="grid sm:grid-cols-3 gap-3.5 text-xs">
+                {event.whatToExpect.map((item) => (
+                  <div
+                    key={item.title}
+                    className="p-4 rounded-xl border border-border/60 bg-muted/20 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="text-2xl mb-2">{item.icon}</div>
+                    <div className="font-bold text-foreground mb-1">{item.title}</div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                ))}
               </div>
             </section>
 
-            {/* Relevant to you */}
-            <section className="mb-10">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Relevant to your interests
-              </h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  AI & Machine Learning
-                </span>
-                <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  Hackathons
-                </span>
-                <span className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  Web Development
-                </span>
+            {/* Event Timeline & Schedule */}
+            <section className="p-6 rounded-2xl border border-border/80 bg-card shadow-2xs">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span>Timeline & Schedule</span>
+                </h2>
+                <span className="text-[11px] text-muted-foreground">IST Campus Time</span>
+              </div>
+
+              <div className="space-y-4">
+                {event.schedule.map((item, idx) => (
+                  <div
+                    key={item.title}
+                    className="flex items-start gap-3.5 p-3 rounded-xl border border-border/50 bg-muted/15"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                      0{idx + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                        <h4 className="text-xs font-bold text-foreground">{item.title}</h4>
+                        <span className="text-[10px] font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                          {item.time}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 
-            {/* Bottom Action Card */}
-            <div className="sticky bottom-4 z-40 p-4 rounded-2xl border border-border/80 bg-card/95 backdrop-blur-md shadow-lg flex items-center justify-between gap-4">
-              <div>
-                <div className="text-xs text-muted-foreground font-medium">Standard Registration</div>
-                <div className="text-lg font-bold text-foreground">₹249</div>
+            {/* Squad Eligibility & Competition Rules */}
+            <section className="p-6 rounded-2xl border border-border/80 bg-card shadow-2xs">
+              <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>Eligibility & Rules</span>
+              </h2>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                {event.rules.map((rule, idx) => (
+                  <div key={idx} className="flex items-start gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
+                    <span>{rule}</span>
+                  </div>
+                ))}
               </div>
+            </section>
 
-              <Button
-                size="lg"
-                onClick={() => setIsRegistered(true)}
-                className="rounded-xl px-7 text-xs font-bold shadow-xs gap-2"
-              >
-                Register Now
-                <Ticket className="w-4 h-4" />
-              </Button>
+            {/* Mentors & Tech Leads (Featuring Anime Avatars) */}
+            <section className="p-6 rounded-2xl border border-border/80 bg-card shadow-2xs">
+              <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                <span>Mentors & Jury Leads</span>
+              </h2>
+
+              <div className="grid sm:grid-cols-2 gap-3.5">
+                {event.mentors.map((mentor) => (
+                  <Link
+                    key={mentor.name}
+                    href={`/people/${mentor.avatarSlug}`}
+                    className="p-3.5 rounded-xl border border-border/70 bg-muted/20 hover:border-primary/40 hover:bg-muted/40 transition-all flex items-center gap-3 group"
+                  >
+                    <div className="w-11 h-11 rounded-full overflow-hidden border border-border/80 shrink-0 bg-card">
+                      <img
+                        src={getAnimeAvatar(mentor.avatarSlug, mentor.name)}
+                        alt={mentor.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors truncate">
+                        {mentor.name}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        {mentor.role}
+                      </p>
+                      <span className="text-[10px] text-primary font-medium inline-flex items-center gap-1 mt-0.5">
+                        <span>View Portfolio</span>
+                        <ChevronRight className="w-2.5 h-2.5" />
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+          </div>
+
+          {/* RIGHT COLUMN: Sticky Pass Card & Venue Logistics (Col 4) */}
+          <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
+            
+            {/* Primary Registration / Digital Pass Card */}
+            <div className="p-5 rounded-3xl border-2 border-primary/30 bg-card shadow-lg">
+              
+              {/* If Registered: Digital Ticket Pass */}
+              {isRegistered ? (
+                <div className="space-y-4 animate-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between pb-3 border-b border-border/60">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Confirmed Pass
+                    </span>
+                    <span className="text-[10px] font-mono text-muted-foreground font-semibold">
+                      #LPU-{event.slug.substring(0, 4).toUpperCase()}-8841
+                    </span>
+                  </div>
+
+                  <div className="text-center py-2">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 shadow-md shadow-emerald-500/20">
+                      <Check className="w-6 h-6 stroke-[3]" />
+                    </div>
+                    <h3 className="text-base font-bold text-foreground">
+                      You&apos;re Officially In!
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Show this student pass at physical entrance.
+                    </p>
+                  </div>
+
+                  {/* Pass Ticket Body */}
+                  <div className="p-3.5 rounded-2xl border border-dashed border-border/80 bg-muted/30 space-y-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                        Event
+                      </span>
+                      <span className="font-bold text-foreground text-xs block">
+                        {event.title}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40 text-[11px]">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                          Date
+                        </span>
+                        <span className="font-semibold text-foreground">{event.date}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                          Check-in
+                        </span>
+                        <span className="font-semibold text-foreground">{event.time}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-1 border-t border-border/40 text-[11px]">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                        Venue
+                      </span>
+                      <span className="font-semibold text-foreground">{event.venue}</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsRegistered(false)}
+                    className="w-full rounded-xl text-xs font-semibold cursor-pointer h-9 text-muted-foreground hover:text-foreground"
+                  >
+                    View Registration Options
+                  </Button>
+                </div>
+              ) : (
+                /* Registration State */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[11px] text-muted-foreground font-semibold block">
+                        Entry Fee
+                      </span>
+                      <div className="text-2xl font-black text-foreground">
+                        {event.entryFee}
+                      </div>
+                    </div>
+
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      Registration Open
+                    </span>
+                  </div>
+
+                  {/* Spots progress bar */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                      <span>Capacity</span>
+                      <span className="font-bold text-foreground">{percentageFull}% filled</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-500"
+                        style={{ width: `${percentageFull}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-1.5">
+                      <span>{event.spotsRemaining} spots left</span>
+                      <span>{event.registrationDeadline}</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    onClick={() => setIsRegistered(true)}
+                    className="w-full rounded-xl text-xs font-bold shadow-xs gap-2 cursor-pointer h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Ticket className="w-4 h-4" />
+                    <span>Register Now ({event.entryFee})</span>
+                  </Button>
+
+                  <div className="text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Instant digital pass on student portal</span>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Venue Location & Campus Directions Card */}
+            <div className="p-5 rounded-2xl border border-border/80 bg-card shadow-2xs space-y-3">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary" />
+                <span>Venue & Directions</span>
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                <div>
+                  <span className="font-bold text-foreground block">
+                    {event.venue}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground block">
+                    {event.venueLandmark}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/60 text-[11px] text-muted-foreground leading-relaxed">
+                  <span className="font-semibold text-foreground block mb-0.5">Route Guide:</span>
+                  {event.venueDirections}
+                </div>
+              </div>
+            </div>
+
+            {/* Host Club Card */}
+            <div className="p-5 rounded-2xl border border-border/80 bg-card shadow-2xs space-y-3">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span>Organized By</span>
+              </h3>
+
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-foreground">
+                    {event.host}
+                  </h4>
+                  <span className="text-[10px] text-muted-foreground block">
+                    Official Campus Organization
+                  </span>
+                </div>
+
+                {event.hostSlug && (
+                  <Link href={`/clubs/${event.hostSlug}`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-xl text-[11px] h-7 px-2.5 gap-1 text-primary cursor-pointer"
+                    >
+                      <span>Club Page</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
 
           </div>
-        )}
+
+        </div>
 
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-4 text-center text-xs text-muted-foreground border-t border-border/40 bg-muted/20">
-        Campusly • Event Discovery & Registration
+      <footer className="w-full py-4 text-center text-xs text-muted-foreground border-t border-border/40 bg-muted/20 mt-12">
+        Campusly • LPU Student Event Network
       </footer>
 
     </div>

@@ -802,7 +802,7 @@ export default function ClubDetailPage() {
                   </div>
                   <Button
                     onClick={() => setIsApplying(true)}
-                    className="rounded-xl px-5 h-9 text-xs font-bold bg-white text-slate-950 hover:bg-white/90 shadow-md cursor-pointer gap-1.5"
+                    className="rounded-xl px-5 h-9 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/25 cursor-pointer gap-1.5"
                   >
                     <span>Apply to Join</span>
                     <Users className="w-3.5 h-3.5" />
@@ -900,7 +900,7 @@ export default function ClubDetailPage() {
                           {proj.stack.map((tech) => (
                             <span
                               key={tech}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono font-medium"
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-primary/10 text-primary font-mono font-medium border border-primary/20"
                             >
                               {tech}
                             </span>
@@ -1177,10 +1177,10 @@ export default function ClubDetailPage() {
                           key={track.id}
                           type="button"
                           onClick={() => setSelectedDomain(track.id)}
-                          className={`w-full p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                          className={`w-full p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start justify-between gap-3 ${
                             isSelected
-                              ? "border-primary bg-primary/[0.08] ring-1 ring-primary/30"
-                              : "border-border/60 bg-muted/20 hover:bg-muted/40 hover:border-border"
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs"
+                              : "border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-border/80"
                           }`}
                         >
                           <div>
@@ -1222,12 +1222,12 @@ export default function ClubDetailPage() {
                           onClick={() => setExperienceLevel(lvl.id as any)}
                           className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                             isSelected
-                              ? "border-primary bg-primary/[0.08] ring-1 ring-primary/30 font-bold text-foreground"
-                              : "border-border/60 bg-muted/20 text-muted-foreground hover:text-foreground"
+                              ? "border-primary bg-primary text-primary-foreground font-bold shadow-xs"
+                              : "border-border/60 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/60"
                           }`}
                         >
                           <div className="text-xs font-semibold">{lvl.label}</div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">{lvl.hint}</div>
+                          <div className={`text-[10px] mt-0.5 ${isSelected ? "text-primary-foreground/80" : "text-muted-foreground"}`}>{lvl.hint}</div>
                         </button>
                       );
                     })}

@@ -109,7 +109,7 @@ export default function EventDetailPage() {
           </div>
 
           <div className="relative z-10 max-w-2xl">
-            <span className="text-[11px] font-mono uppercase tracking-widest text-primary-foreground/80 font-bold block mb-1">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-primary font-bold block mb-1">
               Lovely Professional University • Campus Initiative
             </span>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">

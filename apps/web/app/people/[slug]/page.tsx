@@ -54,6 +54,32 @@ const students: Record<string, StudentData> = {
       "Participating in GenAI Hackathon",
     ],
   },
+  "dev-kapoor": {
+    name: "Dev Kapoor",
+    avatar: "DK",
+    degree: "Software Engineering · 2nd Year",
+    about: "Working on campus utilities and cross-platform mobile apps with Flutter & React Native.",
+    interests: ["Web Dev", "Mobile", "TypeScript", "Open Source"],
+    lookingFor: ["Hackathon designers", "Backend engineers"],
+    recentActivity: [
+      "Released Campus Timetable PWA",
+      "Organized Open Source Campus sprint",
+      "Looking for teammates for GenAI Hackathon",
+    ],
+  },
+  "priya-verma": {
+    name: "Priya Verma",
+    avatar: "PV",
+    degree: "Data Science & AI · 3rd Year",
+    about: "Looking for research collaborators and hackathon partners for multi-modal LLM applications.",
+    interests: ["AI", "Research", "PyTorch", "Data Science"],
+    lookingFor: ["ML Engineers", "Research mentors"],
+    recentActivity: [
+      "Published paper summary on Diffusion Models",
+      "Mentoring freshmen in Python for Data Science",
+      "Active participant in AI Club",
+    ],
+  },
 };
 
 export default function StudentProfilePage() {

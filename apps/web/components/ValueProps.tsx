@@ -53,15 +53,15 @@ export default function ValueProps() {
             <div className="p-3 rounded-xl bg-muted/40 border border-border/50 space-y-1.5 mt-2">
               <div className="flex items-center justify-between text-[11px] bg-card p-2 rounded-lg border border-border/60 shadow-2xs">
                 <span className="font-medium text-foreground">⚡ GenAI Hackathon</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">96%</span>
+                <span className="text-muted-foreground text-[10px] font-medium">Tomorrow</span>
               </div>
               <div className="flex items-center justify-between text-[11px] bg-card p-2 rounded-lg border border-border/60 shadow-2xs">
                 <span className="font-medium text-foreground">🏛️ AI & Robotics Society</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">91%</span>
+                <span className="text-muted-foreground text-[10px] font-medium">Weekly</span>
               </div>
               <div className="flex items-center justify-between text-[11px] bg-card p-2 rounded-lg border border-border/60 shadow-2xs">
                 <span className="font-medium text-foreground">🚀 Resume Analyzer Collab</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">84%</span>
+                <span className="text-muted-foreground text-[10px] font-medium">Open Role</span>
               </div>
             </div>
           </Card>

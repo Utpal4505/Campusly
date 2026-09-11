@@ -25,28 +25,22 @@ export default function Navbar() {
           {/* Nav links */}
           <div className="hidden md:flex items-center gap-1 text-xs font-medium text-muted-foreground">
             <Link
-              href="/explore"
+              href="/feed"
               className="px-2.5 py-1.5 rounded-md hover:text-foreground hover:bg-muted/60 transition-colors"
             >
-              Explore Feed
+              For You Feed
             </Link>
             <Link
-              href="/hackathons"
+              href="/events/genai-hackathon"
               className="px-2.5 py-1.5 rounded-md hover:text-foreground hover:bg-muted/60 transition-colors"
             >
               Hackathons
             </Link>
             <Link
-              href="/clubs"
+              href="/people"
               className="px-2.5 py-1.5 rounded-md hover:text-foreground hover:bg-muted/60 transition-colors"
             >
-              Clubs
-            </Link>
-            <Link
-              href="/organizers"
-              className="px-2.5 py-1.5 rounded-md hover:text-foreground hover:bg-muted/60 transition-colors"
-            >
-              For Organizers
+              People
             </Link>
           </div>
         </div>

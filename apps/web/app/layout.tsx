@@ -3,6 +3,7 @@ import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import GlobalModals from "@/components/GlobalModals";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -18,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className={cn("font-sans", geist.variable)}>
-      <body className="bg-background text-foreground min-h-screen">
+      <body className="bg-background text-foreground min-h-screen relative">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -26,6 +27,7 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
           {children}
+          <GlobalModals />
         </ThemeProvider>
       </body>
     </html>

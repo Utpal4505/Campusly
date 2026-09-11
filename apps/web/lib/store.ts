@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export interface CustomPost {
   id: string;
-  type: "teammates" | "events" | "projects";
+  type: "teammates" | "events" | "projects" | "clubs";
   category: string;
   title: string;
   author: string;
@@ -13,6 +13,7 @@ export interface CustomPost {
   createdAt: string;
   actionLabel: string;
   actionDoneLabel: string;
+  actionHref?: string;
 }
 
 export interface OnboardingState {

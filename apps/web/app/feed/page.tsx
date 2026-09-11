@@ -68,8 +68,24 @@ const defaultFeedData: FeedItem[] = [
     description:
       "Campus premier machine learning organization. Weekly paper discussions, GPU cluster access, and hack night labs.",
     tags: ["Weekly Workshops", "GPU Cluster Access", "Recruiting"],
-    actionLabel: "Join Club",
+    actionLabel: "View Club & Join",
     actionDoneLabel: "Member Joined ✓",
+    actionHref: "/clubs/ai-robotics-society",
+  },
+  {
+    id: "design-guild",
+    category: "Club",
+    type: "clubs",
+    title: "Design & Build Guild",
+    statusTag: "Recruiting Fall Cohort",
+    badgeColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/60",
+    meta: "Meets Tue 5:30 PM · Design Studio B · 95+ Active Members",
+    description:
+      "Uniting UI/UX designers and frontend builders. Weekly Figma teardowns, design system workshops, and portfolio reviews.",
+    tags: ["UI/UX", "Figma", "Design Systems", "Recruiting"],
+    actionLabel: "View Club & Join",
+    actionDoneLabel: "Member Joined ✓",
+    actionHref: "/clubs/design-guild",
   },
   {
     id: "rahul-sharma",
@@ -114,20 +130,41 @@ export default function FeedPage() {
   };
 
   // Convert custom user posts into feed items
-  const userCustomFeedItems: FeedItem[] = customPosts.map((post) => ({
-    id: post.id,
-    category: post.type === "events" ? "Hackathon" : "Teammate",
-    type: post.type === "events" ? "hackathons" : "teammates",
-    title: post.title,
-    statusTag: "⚡ Posted Just Now",
-    avatar: post.avatar,
-    badgeColor: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-    meta: post.meta,
-    description: post.description,
-    tags: post.tags,
-    actionLabel: post.actionLabel,
-    actionDoneLabel: post.actionDoneLabel,
-  }));
+  const userCustomFeedItems: FeedItem[] = customPosts.map((post) => {
+    let category: "Hackathon" | "Club" | "Teammate" | "Project" = "Teammate";
+    let type: "hackathons" | "clubs" | "teammates" | "projects" = "teammates";
+    let badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+
+    if (post.type === "events") {
+      category = "Hackathon";
+      type = "hackathons";
+      badgeColor = "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60";
+    } else if (post.type === "clubs") {
+      category = "Club";
+      type = "clubs";
+      badgeColor = "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60";
+    } else if (post.type === "projects") {
+      category = "Project";
+      type = "projects";
+      badgeColor = "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/60";
+    }
+
+    return {
+      id: post.id,
+      category,
+      type,
+      title: post.title,
+      statusTag: "⚡ Posted Just Now",
+      avatar: post.avatar,
+      badgeColor,
+      meta: post.meta,
+      description: post.description,
+      tags: post.tags,
+      actionLabel: post.actionLabel,
+      actionDoneLabel: post.actionDoneLabel,
+      actionHref: post.actionHref,
+    };
+  });
 
   const allFeedItems = [...userCustomFeedItems, ...defaultFeedData];
 
@@ -285,6 +322,24 @@ export default function FeedPage() {
           </div>
         </div>
 
+        {/* Organizer Club Registration Banner when on clubs tab */}
+        {activeTab === "clubs" && (
+          <div className="mb-4 p-3.5 rounded-2xl border border-purple-500/30 bg-purple-500/[0.04] flex items-center justify-between gap-3 text-xs animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <span className="text-base">🏛️</span>
+              <span className="text-muted-foreground">
+                Leading a student organization or club? Recruit members on Campusly.
+              </span>
+            </div>
+            <Link href="/clubs/register">
+              <Button size="sm" variant="outline" className="h-7 text-xs font-semibold rounded-lg shrink-0 gap-1 cursor-pointer">
+                <span>Register Club</span>
+                <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
         {/* Feed Cards List */}
         {filteredItems.length > 0 ? (
           <div className="space-y-4">
@@ -357,34 +412,46 @@ export default function FeedPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-8 px-3 rounded-lg text-xs font-medium"
+                          className="h-8 px-3 rounded-lg text-xs font-medium cursor-pointer"
                         >
                           Details
                         </Button>
                       </Link>
                     )}
 
-                    <Button
-                      size="sm"
-                      onClick={() => handleAction(item.id)}
-                      className={`h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
-                        isDone
-                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
-                          : "shadow-xs"
-                      }`}
-                    >
-                      {isDone ? (
-                        <>
-                          <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{item.actionDoneLabel}</span>
-                        </>
-                      ) : (
-                        <>
+                    {item.actionHref && !isDone ? (
+                      <Link href={item.actionHref}>
+                        <Button
+                          size="sm"
+                          className="h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                        >
                           <span>{item.actionLabel}</span>
                           <ArrowRight className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </Button>
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleAction(item.id)}
+                        className={`h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
+                          isDone
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
+                            : "shadow-xs"
+                        }`}
+                      >
+                        {isDone ? (
+                          <>
+                            <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{item.actionDoneLabel}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>{item.actionLabel}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

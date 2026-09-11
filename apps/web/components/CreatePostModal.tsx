@@ -12,6 +12,7 @@ import {
   Zap,
   Plus,
   Check,
+  Building2,
 } from "lucide-react";
 
 export default function CreatePostModal() {
@@ -19,7 +20,7 @@ export default function CreatePostModal() {
   const pathname = usePathname();
   const { isCreateModalOpen, setCreateModalOpen, addCustomPost, userName } = useCampusStore();
 
-  const [postType, setPostType] = useState<"teammate" | "event">("teammate");
+  const [postType, setPostType] = useState<"teammate" | "event" | "club">("teammate");
 
   // Teammate post fields
   const [projectTitle, setProjectTitle] = useState("");
@@ -32,6 +33,11 @@ export default function CreatePostModal() {
   const [eventTiming, setEventTiming] = useState("");
   const [eventVenue, setEventVenue] = useState("");
   const [eventDesc, setEventDesc] = useState("");
+
+  // Club post fields
+  const [clubTitle, setClubTitle] = useState("");
+  const [clubVenue, setClubVenue] = useState("");
+  const [clubDesc, setClubDesc] = useState("");
 
   const tagOptions = ["AI", "Web Dev", "Design", "Startups", "Mobile", "Hackathon", "Open Source"];
 
@@ -63,7 +69,7 @@ export default function CreatePostModal() {
       };
 
       addCustomPost(newPost);
-    } else {
+    } else if (postType === "event") {
       if (!eventTitle.trim() || !eventDesc.trim()) return;
 
       const newPost: CustomPost = {
@@ -82,6 +88,31 @@ export default function CreatePostModal() {
       };
 
       addCustomPost(newPost);
+    } else if (postType === "club") {
+      if (!clubTitle.trim() || !clubDesc.trim()) return;
+
+      const slug = clubTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const newPost: CustomPost = {
+        id: `club-${Date.now()}`,
+        type: "clubs",
+        category: "Student Club",
+        title: clubTitle,
+        author: userName,
+        avatar: clubTitle.substring(0, 2).toUpperCase(),
+        meta: `${clubVenue || "CS Hall 3"} · Lead: ${userName}`,
+        description: clubDesc,
+        tags: selectedTags.length > 0 ? selectedTags : ["Campus Club", "Recruiting"],
+        createdAt: "Just now",
+        actionLabel: "View Club & Join",
+        actionDoneLabel: "Applied ✓",
+        actionHref: `/clubs/${slug || "ai-robotics-society"}`,
+      };
+
+      addCustomPost(newPost);
     }
 
     setCreateModalOpen(false);
@@ -94,6 +125,9 @@ export default function CreatePostModal() {
     setEventTiming("");
     setEventVenue("");
     setEventDesc("");
+    setClubTitle("");
+    setClubVenue("");
+    setClubDesc("");
 
     if (pathname !== "/feed") {
       router.push("/feed");
@@ -132,27 +166,40 @@ export default function CreatePostModal() {
           <button
             type="button"
             onClick={() => setPostType("teammate")}
-            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
               postType === "teammate"
                 ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Users className="w-3.5 h-3.5 text-blue-500" />
-            <span>Looking for Teammate</span>
+            <span>Teammate</span>
           </button>
 
           <button
             type="button"
             onClick={() => setPostType("event")}
-            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
               postType === "event"
                 ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Host Event / Meetup</span>
+            <span>Event</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPostType("club")}
+            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
+              postType === "club"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5 text-purple-500" />
+            <span>Register Club</span>
           </button>
         </div>
 
@@ -202,7 +249,7 @@ export default function CreatePostModal() {
                 />
               </div>
             </>
-          ) : (
+          ) : postType === "event" ? (
             <>
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 block">
@@ -254,6 +301,49 @@ export default function CreatePostModal() {
                   value={eventDesc}
                   onChange={(e) => setEventDesc(e.target.value)}
                   placeholder="What will attendees learn? What should they bring?"
+                  rows={3}
+                  required
+                  className="w-full p-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground resize-none"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Club / Organization Name
+                </label>
+                <input
+                  type="text"
+                  value={clubTitle}
+                  onChange={(e) => setClubTitle(e.target.value)}
+                  placeholder="e.g. Blockchain & Web3 Society"
+                  required
+                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Meeting Frequency & Venue
+                </label>
+                <input
+                  type="text"
+                  value={clubVenue}
+                  onChange={(e) => setClubVenue(e.target.value)}
+                  placeholder="e.g. Every Thursday · 6:00 PM · CS Hall 3"
+                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Club Mission & Member Perks
+                </label>
+                <textarea
+                  value={clubDesc}
+                  onChange={(e) => setClubDesc(e.target.value)}
+                  placeholder="What is your club's focus? What projects will members work on? What perks are offered?"
                   rows={3}
                   required
                   className="w-full p-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground resize-none"

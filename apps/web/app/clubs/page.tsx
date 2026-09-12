@@ -19,6 +19,9 @@ import {
   Check,
   ShieldCheck,
 } from "lucide-react";
+import ClubAvatar from "@/components/ClubAvatar";
+import { getClubTheme } from "@/lib/avatars";
+
 
 const CLUB_CATEGORIES = [
   "All",
@@ -54,19 +57,6 @@ export default function ClubsDirectoryPage() {
     };
   }, []);
 
-  const getClubEmoji = (name: string) => {
-    const lower = name.toLowerCase();
-    if (lower.includes("ai") || lower.includes("robot")) return "🤖";
-    if (lower.includes("design") || lower.includes("creative") || lower.includes("ux")) return "🎨";
-    if (lower.includes("startup") || lower.includes("ecell") || lower.includes("e-cell") || lower.includes("venture")) return "🚀";
-    if (lower.includes("cyber") || lower.includes("security") || lower.includes("hack")) return "🛡️";
-    if (lower.includes("game") || lower.includes("esport")) return "🎮";
-    if (lower.includes("sound") || lower.includes("music") || lower.includes("audio")) return "🎵";
-    if (lower.includes("photo") || lower.includes("film") || lower.includes("shutter")) return "📸";
-    if (lower.includes("code") || lower.includes("developer") || lower.includes("gdsc")) return "💻";
-    if (lower.includes("blockchain") || lower.includes("web3")) return "⚡";
-    return "🏛️";
-  };
 
   const filteredClubs = clubs.filter((club) => {
     const nameMatch = club.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -83,20 +73,33 @@ export default function ClubsDirectoryPage() {
     const lowerName = club.name.toLowerCase();
     const tagNames = (club.interests || []).map((i) => i.name.toLowerCase()).join(" ");
 
+    const clubTheme = getClubTheme(club.name, club.interests);
     if (activeCategory === "Tech & AI") {
-      return lowerName.includes("ai") || lowerName.includes("robot") || lowerName.includes("developer") || tagNames.includes("ai") || tagNames.includes("machine learning");
+      return (
+        clubTheme.domain === "Tech & AI" ||
+        clubTheme.domain === "Software & Coding" ||
+        clubTheme.domain === "Quantum Computing"
+      );
     }
     if (activeCategory === "Design & Creative") {
-      return lowerName.includes("design") || lowerName.includes("creative") || tagNames.includes("design") || tagNames.includes("ui");
+      return clubTheme.domain === "Design & Creative";
     }
     if (activeCategory === "Startups & E-Cell") {
-      return lowerName.includes("startup") || lowerName.includes("ecell") || lowerName.includes("e-cell") || tagNames.includes("startup") || tagNames.includes("entrepreneurship");
+      return (
+        clubTheme.domain === "Startups & E-Cell" ||
+        clubTheme.domain === "Blockchain & FinTech"
+      );
     }
     if (activeCategory === "Security & Systems") {
-      return lowerName.includes("cyber") || lowerName.includes("security") || lowerName.includes("cloud") || tagNames.includes("security");
+      return clubTheme.domain === "Security & Systems";
     }
     if (activeCategory === "Media & Culture") {
-      return lowerName.includes("photo") || lowerName.includes("sound") || lowerName.includes("debate") || lowerName.includes("game") || tagNames.includes("culture");
+      return (
+        clubTheme.domain === "Media & Culture" ||
+        clubTheme.domain === "Music & Audio" ||
+        clubTheme.domain === "Gaming & Esports" ||
+        clubTheme.domain === "Athletics & Sports"
+      );
     }
 
     return true;
@@ -191,7 +194,6 @@ export default function ClubsDirectoryPage() {
         ) : filteredClubs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredClubs.map((club) => {
-              const emoji = getClubEmoji(club.name);
               const memberCount = club.memberCount ?? 0;
               const creatorName = club.creator?.name || "Campus Student Board";
 
@@ -203,9 +205,12 @@ export default function ClubsDirectoryPage() {
                   <div>
                     {/* Top Anchor & Status Badge */}
                     <div className="flex items-start justify-between gap-3 mb-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-2xl shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                        {emoji}
-                      </div>
+                      <ClubAvatar
+                        clubName={club.name}
+                        clubId={club.id}
+                        interests={club.interests}
+                        size="md"
+                      />
 
                       <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
                         <Users className="w-3 h-3 text-purple-500" />
@@ -251,15 +256,14 @@ export default function ClubsDirectoryPage() {
                       </div>
                     )}
 
-                    {/* CTA Button */}
+                    {/* CTA Button (Resilient styling - no hover blackout) */}
                     <Link href={`/clubs/${club.id}`} className="block">
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="w-full h-8.5 rounded-xl text-xs font-semibold gap-1.5 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all cursor-pointer"
+                        className="w-full h-9 rounded-xl text-xs font-semibold gap-1.5 bg-secondary text-foreground hover:bg-foreground hover:text-background border border-border/80 hover:border-foreground/80 group-hover:border-foreground/30 transition-all duration-200 cursor-pointer shadow-xs group/btn"
                       >
                         <span>View Club & Join</span>
-                        <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                        <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:translate-x-1 group-hover:translate-x-0.5" />
                       </Button>
                     </Link>
                   </div>

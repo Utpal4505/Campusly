@@ -10,6 +10,8 @@ import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
 import { authClient } from "@/lib/auth";
 import type { ClubDetail } from "@repo/schemas";
+import ClubAvatar from "@/components/ClubAvatar";
+
 import {
   ArrowLeft,
   Heart,
@@ -622,9 +624,12 @@ export default function ClubDetailPage() {
               {/* Pass Top Bar */}
               <div className="flex items-center justify-between pb-4 border-b border-border/60">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-lg">
-                    {club.iconEmoji}
-                  </div>
+                  <ClubAvatar
+                    clubName={club.name}
+                    clubId={liveClub?.id || rawSlug}
+                    size="sm"
+                    className="w-9 h-9 rounded-xl"
+                  />
                   <div>
                     <div className="text-xs font-bold text-foreground">{club.name}</div>
                     <div className="text-[10px] text-muted-foreground">Official Campus Student Pass</div>
@@ -840,9 +845,12 @@ export default function ClubDetailPage() {
               <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex items-start gap-4">
                   {/* Visual Emblem Anchor */}
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-3xl sm:text-4xl shrink-0 shadow-inner">
-                    {club.iconEmoji}
-                  </div>
+                  <ClubAvatar
+                    clubName={club.name}
+                    clubId={liveClub?.id || rawSlug}
+                    size="lg"
+                    className="border-white/20 shadow-xl"
+                  />
 
                   <div>
                     {/* Top status badges */}

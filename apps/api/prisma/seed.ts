@@ -185,6 +185,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-1',
     name: 'Rahul Sharma',
+    username: 'rahul_dev',
     email: 'rahul.sharma@lpu.in',
     department: 'School of Computer Science & Engineering',
     yearOfStudy: 3,
@@ -194,6 +195,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-2',
     name: 'Ananya Singh',
+    username: 'ananya_singh',
     email: 'ananya.singh@lpu.in',
     department: 'School of Design',
     yearOfStudy: 2,
@@ -203,6 +205,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-3',
     name: 'Dev Kapoor',
+    username: 'dev_kapoor',
     email: 'dev.kapoor@lpu.in',
     department: 'School of Computer Science & Engineering',
     yearOfStudy: 3,
@@ -212,6 +215,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-4',
     name: 'Priya Verma',
+    username: 'priya_ai',
     email: 'priya.verma@lpu.in',
     department: 'School of Computer Applications',
     yearOfStudy: 3,
@@ -221,6 +225,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-5',
     name: 'Rohan Mehta',
+    username: 'rohan_mehta',
     email: 'rohan.mehta@lpu.in',
     department: 'Mittal School of Business',
     yearOfStudy: 4,
@@ -230,6 +235,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-6',
     name: 'Sneha Reddy',
+    username: 'sneha_robotics',
     email: 'sneha.reddy@lpu.in',
     department: 'School of Electronics & Electrical Engineering',
     yearOfStudy: 2,
@@ -239,6 +245,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-7',
     name: 'Aarav Patel',
+    username: 'aarav_coder',
     email: 'aarav.patel@lpu.in',
     department: 'School of Computer Science & Engineering',
     yearOfStudy: 2,
@@ -248,6 +255,7 @@ const SEED_STUDENTS = [
   {
     id: 'seed-student-8',
     name: 'Tanvi Joshi',
+    username: 'tanvi_joshi',
     email: 'tanvi.joshi@lpu.in',
     department: 'School of Journalism & Film Production',
     yearOfStudy: 3,
@@ -491,6 +499,7 @@ async function main() {
       where: { email: studentData.email },
       update: {
         name: studentData.name,
+        username: studentData.username,
         department: studentData.department,
         yearOfStudy: studentData.yearOfStudy,
         bio: studentData.bio,
@@ -498,6 +507,7 @@ async function main() {
       create: {
         id: studentData.id,
         name: studentData.name,
+        username: studentData.username,
         email: studentData.email,
         department: studentData.department,
         yearOfStudy: studentData.yearOfStudy,

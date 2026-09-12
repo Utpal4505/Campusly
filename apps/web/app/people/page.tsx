@@ -21,6 +21,7 @@ import {
 interface Peer {
   id: string;
   slug: string;
+  username?: string | null;
   name: string;
   avatar: string;
   role: string;
@@ -94,7 +95,8 @@ export default function PeoplePage() {
 
     return {
       id: user.id,
-      slug: slug || user.id,
+      slug: user.username || slug || user.id,
+      username: user.username,
       name: user.name,
       avatar: initials || "ST",
       role,
@@ -113,8 +115,10 @@ export default function PeoplePage() {
           t.toLowerCase() === selectedTag.toLowerCase() ||
           t.toLowerCase().includes(selectedTag.toLowerCase())
       );
+    const cleanSearch = searchQuery.toLowerCase().trim().replace(/^@/, "");
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.username && p.username.toLowerCase().includes(cleanSearch)) ||
       p.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.bio.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -163,7 +167,7 @@ export default function PeoplePage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, skill, or project idea..."
+            placeholder="Search by name, @username, skill, or department..."
             className="w-full h-9 pl-9 pr-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground transition-colors"
           />
         </div>
@@ -204,12 +208,19 @@ export default function PeoplePage() {
                       </div>
                     </Link>
                     <div className="min-w-0">
-                      <Link
-                        href={`/people/${peer.slug}`}
-                        className="text-sm font-bold text-foreground hover:underline"
-                      >
-                        {peer.name}
-                      </Link>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          href={`/people/${peer.slug}`}
+                          className="text-sm font-bold text-foreground hover:underline"
+                        >
+                          {peer.name}
+                        </Link>
+                        {peer.username && (
+                          <span className="text-[11px] font-mono font-medium text-primary bg-primary/10 px-1.5 py-0.2 rounded-md">
+                            @{peer.username}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground font-medium">
                         {peer.role}
                       </div>

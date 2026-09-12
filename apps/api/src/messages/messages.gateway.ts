@@ -75,12 +75,13 @@ export class MessagesGateway
 
   @SubscribeMessage('send_message')
   async handleSendMessage(
-    @ConnectedSocket() _client: Socket,
+    @ConnectedSocket() client: Socket,
     @MessageBody()
     data: {
       conversationId: string;
       senderId: string;
       content: string;
+      clientTempId?: string;
     },
   ) {
     if (!data?.conversationId || !data?.senderId || !data?.content) {
@@ -93,12 +94,12 @@ export class MessagesGateway
       data.content,
     );
 
-    // Broadcast instant real-time message to room
-    this.server
+    // Broadcast instant real-time message to other room members (excluding the sender socket)
+    client
       .to(`conversation_${data.conversationId}`)
       .emit('new_message', message);
 
-    return { status: 'ok', message };
+    return { status: 'ok', message, clientTempId: data.clientTempId };
   }
 
   /**

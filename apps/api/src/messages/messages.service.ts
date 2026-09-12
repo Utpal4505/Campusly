@@ -51,6 +51,7 @@ export class MessagesService {
         peer: {
           id: peer ? peer.id : 'unknown',
           name: peer ? peer.name : 'Campus Peer',
+          username: peer ? peer.username : null,
           email: peer ? peer.email : '',
           image: peer ? peer.image : null,
           department: peer ? peer.department : 'Engineering',
@@ -73,13 +74,17 @@ export class MessagesService {
    * Find existing or create a new 1-on-1 conversation between two campus students.
    */
   async getOrCreateConversation(userId: string, recipientIdOrEmail: string) {
-    const slugName = recipientIdOrEmail.replace(/-/g, ' ').trim();
+    const cleanHandle = recipientIdOrEmail.replace(/^@/, '').trim();
+    const slugName = cleanHandle.replace(/[-_]/g, ' ').trim();
     const peer = await this.prisma.user.findFirst({
       where: {
         OR: [
           { id: recipientIdOrEmail },
+          { username: cleanHandle },
           { email: recipientIdOrEmail },
+          { username: { equals: cleanHandle, mode: 'insensitive' } },
           { name: { equals: slugName, mode: 'insensitive' } },
+          { name: { equals: recipientIdOrEmail, mode: 'insensitive' } },
         ],
       },
     });
@@ -244,6 +249,7 @@ export class MessagesService {
       peer: {
         id: peer ? peer.id : 'unknown',
         name: peer ? peer.name : 'Campus Peer',
+        username: peer ? peer.username : null,
         email: peer ? peer.email : '',
         image: peer ? peer.image : null,
         department: peer ? peer.department : 'Engineering',

@@ -22,6 +22,7 @@ export const conversationSchema = z.object({
   peer: z.object({
     id: z.string(),
     name: z.string(),
+    username: z.string().nullable().optional(),
     email: z.string(),
     image: z.string().nullable().optional(),
     department: z.string().nullable().optional(),

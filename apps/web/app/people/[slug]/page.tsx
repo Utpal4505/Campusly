@@ -387,6 +387,11 @@ export default function StudentProfilePage() {
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                       {student.name}
                     </h1>
+                    {dbUser?.username && (
+                      <span className="text-xs font-mono font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
+                        @{dbUser.username}
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
                       <ShieldCheck className="w-3 h-3 text-emerald-500" />
                       Verified Student
@@ -409,7 +414,7 @@ export default function StudentProfilePage() {
                   <span>Invite to Team</span>
                 </Button>
 
-                <Link href={`/messages/${slug}`}>
+                <Link href={`/messages/${dbUser?.username || slug}`}>
                   <Button
                     size="sm"
                     variant="outline"

@@ -9,6 +9,7 @@ export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export const userCardSchema = z.object({
   id: z.string(),
   name: z.string(),
+  username: z.string().nullable().optional(),
   email: z.string().email().optional(),
   image: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),

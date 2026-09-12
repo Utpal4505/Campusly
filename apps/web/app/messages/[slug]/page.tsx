@@ -9,7 +9,7 @@ import { getAnimeAvatar } from "@/lib/avatars";
 import { authClient } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { io, Socket } from "socket.io-client";
-import type { ConversationItem, MessageItem } from "@repo/schemas";
+import type { ConversationItem, MessageItem, UserCard } from "@repo/schemas";
 import {
   ArrowLeft,
   Send,
@@ -24,6 +24,7 @@ import {
   Loader2,
   Wifi,
   WifiOff,
+  UserPlus,
 } from "lucide-react";
 
 interface DisplayMessage {
@@ -36,6 +37,7 @@ interface DisplayMessage {
 interface PeerConversation {
   id?: string;
   slug: string;
+  username?: string | null;
   name: string;
   role: string;
   degree: string;
@@ -49,7 +51,8 @@ interface PeerConversation {
 
 const SEED_CONVERSATIONS: PeerConversation[] = [
   {
-    slug: "ananya-singh",
+    slug: "ananya_singh",
+    username: "ananya_singh",
     name: "Ananya Singh",
     role: "Lead Product Designer @ Design Guild",
     degree: "Design & CS · 3rd Year",
@@ -59,7 +62,8 @@ const SEED_CONVERSATIONS: PeerConversation[] = [
     isOnline: true,
   },
   {
-    slug: "rahul-sharma",
+    slug: "rahul_dev",
+    username: "rahul_dev",
     name: "Rahul Sharma",
     role: "AI & Backend Lead",
     degree: "B.Tech CSE · 2nd Year",
@@ -69,7 +73,8 @@ const SEED_CONVERSATIONS: PeerConversation[] = [
     isOnline: true,
   },
   {
-    slug: "dev-kapoor",
+    slug: "dev_kapoor",
+    username: "dev_kapoor",
     name: "Dev Kapoor",
     role: "Full Stack & Systems Lead",
     degree: "Software Engineering · 2nd Year",
@@ -79,7 +84,8 @@ const SEED_CONVERSATIONS: PeerConversation[] = [
     isOnline: false,
   },
   {
-    slug: "priya-verma",
+    slug: "priya_ai",
+    username: "priya_ai",
     name: "Priya Verma",
     role: "President @ AI & Robotics Society",
     degree: "Data Science & AI · 3rd Year",
@@ -101,6 +107,8 @@ export default function MessagePage() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [discoveredUsers, setDiscoveredUsers] = useState<UserCard[]>([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [showMobileList, setShowMobileList] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -110,8 +118,14 @@ export default function MessagePage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Active Peer information
+  const normalizedRaw = rawSlug.replace(/^@/, "").toLowerCase().replace(/[-_]/g, "");
   const activeConversation =
-    conversationsList.find((c) => c.slug === rawSlug || c.id === rawSlug) ||
+    conversationsList.find((c) => {
+      if (c.slug === rawSlug || c.id === rawSlug) return true;
+      if (c.username && (c.username === rawSlug || c.username === rawSlug.replace(/^@/, ""))) return true;
+      const cleanSlug = c.slug.toLowerCase().replace(/[-_]/g, "");
+      return cleanSlug === normalizedRaw;
+    }) ||
     conversationsList[0] ||
     SEED_CONVERSATIONS[0]!;
 
@@ -124,7 +138,8 @@ export default function MessagePage() {
         if (isMounted && Array.isArray(data) && data.length > 0) {
           const mapped: PeerConversation[] = data.map((c) => ({
             id: c.id,
-            slug: c.peer.id,
+            slug: c.peer.username || c.peer.id,
+            username: c.peer.username,
             name: c.peer.name,
             role: `${c.peer.department || "Engineering"} Student`,
             degree: `Year ${c.peer.yearOfStudy || 3} · LPU`,
@@ -141,9 +156,12 @@ export default function MessagePage() {
 
           // Merge with seeds so standard peers remain discoverable
           const existingSlugs = new Set(mapped.map((m) => m.slug));
+          const existingUsernames = new Set(mapped.map((m) => m.username).filter(Boolean));
           const combined = [
             ...mapped,
-            ...SEED_CONVERSATIONS.filter((s) => !existingSlugs.has(s.slug)),
+            ...SEED_CONVERSATIONS.filter(
+              (s) => !existingSlugs.has(s.slug) && !existingUsernames.has(s.username)
+            ),
           ];
           setConversationsList(combined);
         }
@@ -156,6 +174,41 @@ export default function MessagePage() {
       isMounted = false;
     };
   }, []);
+
+  // Live search users by @username or name
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setDiscoveredUsers([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setIsSearchingUsers(true);
+      authClient
+        .getUsers(undefined, q)
+        .then((users) => {
+          const knownSlugs = new Set(
+            conversationsList.map((c) => (c.username || c.slug).toLowerCase())
+          );
+          const filtered = users.filter(
+            (u) =>
+              u.id !== currentUserId &&
+              !knownSlugs.has((u.username || "").toLowerCase()) &&
+              !knownSlugs.has(u.id.toLowerCase())
+          );
+          setDiscoveredUsers(filtered);
+        })
+        .catch((err) => {
+          console.warn("Peer search error:", err);
+        })
+        .finally(() => {
+          setIsSearchingUsers(false);
+        });
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, currentUserId, conversationsList]);
 
   // 2. Initialize or Get Active Conversation & History
   useEffect(() => {
@@ -246,7 +299,31 @@ export default function MessagePage() {
     // Listen for incoming real-time messages from peer
     socket.on("new_message", (newMsg: any) => {
       setMessages((prev) => {
+        // If message ID already in list, do not duplicate
         if (prev.some((m) => m.id === newMsg.id)) return prev;
+
+        // If sent by the current user, reconcile with optimistic temp message
+        if (newMsg.senderId === currentUserId) {
+          const tempIdx = prev.findIndex(
+            (m) =>
+              m.sender === "user" &&
+              m.id.startsWith("temp-") &&
+              m.text === newMsg.content
+          );
+          if (tempIdx !== -1) {
+            const updated = [...prev];
+            updated[tempIdx] = {
+              ...updated[tempIdx]!,
+              id: newMsg.id,
+              time: new Date(newMsg.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            };
+            return updated;
+          }
+        }
+
         return [
           ...prev,
           {
@@ -288,7 +365,7 @@ export default function MessagePage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 4. Send Message via WebSockets + HTTP Fallback
+  // 4. Send Message via WebSockets + HTTP Fallback (No Duplicates)
   const handleSend = async (textToSend?: string) => {
     const content = (textToSend || inputText).trim();
     if (!content) return;
@@ -320,17 +397,35 @@ export default function MessagePage() {
       )
     );
 
-    // Transmit via WebSocket
+    // Transmit via WebSocket with temp ID acknowledgment
     if (activeConvId) {
       if (socketRef.current?.connected) {
-        socketRef.current.emit("send_message", {
-          conversationId: activeConvId,
-          senderId: currentUserId,
-          content,
-        });
+        socketRef.current.emit(
+          "send_message",
+          {
+            conversationId: activeConvId,
+            senderId: currentUserId,
+            content,
+            clientTempId: tempId,
+          },
+          (res: any) => {
+            if (res?.status === "ok" && res?.message?.id) {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === tempId ? { ...m, id: res.message.id } : m
+                )
+              );
+            }
+          }
+        );
       } else {
         try {
-          await authClient.sendMessage(activeConvId, content);
+          const savedMsg = await authClient.sendMessage(activeConvId, content);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId ? { ...m, id: savedMsg.id } : m
+            )
+          );
         } catch (err) {
           console.error("HTTP send message error:", err);
         }
@@ -342,9 +437,11 @@ export default function MessagePage() {
     handleSend(prompt);
   };
 
+  const cleanQ = searchQuery.toLowerCase().trim().replace(/^@/, "");
   const filteredConversations = conversationsList.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.username && c.username.toLowerCase().includes(cleanQ)) ||
       c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.eventMatch.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -413,11 +510,57 @@ export default function MessagePage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search students, events..."
+                  placeholder="Search by name, @username..."
                   className="w-full h-8 pl-8 pr-3 text-xs rounded-xl bg-card border border-border/70 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary transition-colors"
                 />
               </div>
             </div>
+
+            {/* Discovered Users from Search */}
+            {discoveredUsers.length > 0 && (
+              <div className="p-2.5 bg-primary/5 border-b border-border/60">
+                <div className="flex items-center justify-between px-1 mb-1.5">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                    Start Chat with Student ({discoveredUsers.length})
+                  </span>
+                  {isSearchingUsers && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                </div>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {discoveredUsers.map((u) => (
+                    <Link
+                      key={u.id}
+                      href={`/messages/${u.username || u.id}`}
+                      onClick={() => {
+                        setShowMobileList(false);
+                        setSearchQuery("");
+                      }}
+                      className="p-2 rounded-xl bg-card hover:bg-primary/10 border border-border/60 flex items-center justify-between gap-2 transition-all block group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-7 h-7 rounded-full overflow-hidden border border-border/80 bg-muted/20 shrink-0">
+                          <img
+                            src={getAnimeAvatar(u.username || u.id, u.name)}
+                            alt={u.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-foreground block truncate group-hover:text-primary">
+                            {u.name}
+                          </span>
+                          <span className="text-[10px] font-mono text-primary truncate block">
+                            @{u.username || "student"}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold text-primary px-2 py-0.5 rounded-md bg-primary/10 group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
+                        Chat →
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Conversation Thread List */}
             <div className="flex-1 overflow-y-auto divide-y divide-border/40 scrollbar-none min-h-0">
@@ -457,9 +600,16 @@ export default function MessagePage() {
                     {/* Meta Preview */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1 mb-0.5">
-                        <span className={`text-xs font-bold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
-                          {convo.name}
-                        </span>
+                        <div className="flex items-center gap-1.5 min-w-0 truncate">
+                          <span className={`text-xs font-bold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                            {convo.name}
+                          </span>
+                          {convo.username && (
+                            <span className="text-[10px] font-mono text-primary/80 shrink-0">
+                              @{convo.username}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {convo.lastTime}
                         </span>
@@ -521,10 +671,15 @@ export default function MessagePage() {
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <h3 className="text-sm font-bold text-foreground truncate">
                       {activeConversation.name}
                     </h3>
+                    {activeConversation.username && (
+                      <span className="text-[11px] font-mono font-medium text-primary bg-primary/10 px-1.5 py-0.2 rounded-md">
+                        @{activeConversation.username}
+                      </span>
+                    )}
                     <span title="Verified Campus Student">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                     </span>

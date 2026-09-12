@@ -36,6 +36,7 @@ export class UsersService {
     return {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
       image: user.image,
       bio: user.bio,
@@ -129,8 +130,10 @@ export class UsersService {
 
     if (search && search.trim()) {
       const q = search.trim();
+      const cleanQ = q.replace(/^@/, '');
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
+        { username: { contains: cleanQ, mode: 'insensitive' } },
         { department: { contains: q, mode: 'insensitive' } },
         { bio: { contains: q, mode: 'insensitive' } },
         {
@@ -167,6 +170,7 @@ export class UsersService {
     return users.map((u) => ({
       id: u.id,
       name: u.name,
+      username: u.username,
       email: u.email,
       image: u.image,
       bio: u.bio,
@@ -181,12 +185,20 @@ export class UsersService {
   }
 
   /**
-   * Return a single user by ID or slugified name.
+   * Return a single user by ID, username, or slugified name.
    */
   async findOne(idOrSlug: string) {
-    // 1. Try finding by ID
-    let user = await this.prisma.user.findUnique({
-      where: { id: idOrSlug },
+    const cleanHandle = idOrSlug.replace(/^@/, '').trim();
+
+    // 1. Try finding by ID or username
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { username: cleanHandle },
+          { username: { equals: cleanHandle, mode: 'insensitive' } },
+        ],
+      },
       include: {
         userInterests: {
           include: {
@@ -208,10 +220,11 @@ export class UsersService {
         },
       });
 
-      const targetSlug = idOrSlug.toLowerCase().trim();
+      const targetSlug = cleanHandle.toLowerCase().trim();
       user =
         allUsers.find((u) => {
           if (u.id.toLowerCase() === targetSlug) return true;
+          if (u.username && u.username.toLowerCase() === targetSlug) return true;
           const slug = u.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
@@ -227,6 +240,7 @@ export class UsersService {
     return {
       id: user.id,
       name: user.name,
+      username: user.username,
       email: user.email,
       image: user.image,
       bio: user.bio,

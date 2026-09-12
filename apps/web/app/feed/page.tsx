@@ -23,6 +23,13 @@ import {
   Trophy,
   Loader2,
   AlertCircle,
+  Flame,
+  Users,
+  UserPlus,
+  FolderGit2,
+  Share2,
+  Check,
+  SlidersHorizontal,
 } from "lucide-react";
 
 interface FeedItem {
@@ -53,17 +60,19 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
     const dateDay = eventDate ? String(eventDate.getDate()) : "20";
 
     const metaParts = [
-      raw.metadata?.date
-        ? new Date(raw.metadata.date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        : null,
-      raw.metadata?.location || null,
+      raw.metadata?.location || "Main Campus Auditorium",
       raw.metadata?.registrationCount !== undefined
         ? `${raw.metadata.registrationCount} registered`
-        : null,
+        : "Registration open",
     ].filter(Boolean);
+
+    const isPaid = (raw.metadata as any)?.isPaid;
+    const prize = (raw.metadata as any)?.prize || (raw.metadata as any)?.prizePool;
+    const statusTag = prize
+      ? `₹${prize} Prize Pool`
+      : isPaid
+      ? "Paid Event Pass"
+      : "Free Entry · Open Registration";
 
     return {
       id: raw.id,
@@ -72,12 +81,7 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
       title: raw.title,
       badgeColor:
         "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60",
-      statusTag: raw.metadata?.date
-        ? new Date(raw.metadata.date).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        : "Upcoming Event",
+      statusTag,
       meta: metaParts.join(" · "),
       description: raw.description || "Campus student event.",
       tags: raw.interests ? raw.interests.map((i) => i.name) : [],
@@ -88,7 +92,7 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
       day: dateDay,
       attribution:
         raw.matchedInterests && raw.matchedInterests.length > 0
-          ? `Because you're interested in ${raw.matchedInterests.join(", ")}`
+          ? `Matched: ${raw.matchedInterests.slice(0, 2).join(" · ")}`
           : undefined,
     };
   } else {
@@ -98,7 +102,7 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
       raw.metadata?.creatorName
         ? `Led by ${raw.metadata.creatorName}`
         : "Official Campus Club",
-      memberCount > 0 ? `${memberCount} Members` : "Recruiting New Members",
+      "Weekly Sprints & Workshops",
     ].filter(Boolean);
 
     return {
@@ -109,7 +113,7 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
       badgeColor:
         "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60",
       statusTag:
-        memberCount > 0 ? `${memberCount} Members` : "Recruiting Members",
+        memberCount > 0 ? `${memberCount} Active Members` : "Recruiting Members",
       meta: metaParts.join(" · "),
       description: raw.description || "Campus student organization.",
       tags: raw.interests ? raw.interests.map((i) => i.name) : [],
@@ -118,7 +122,7 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
       actionHref: `/clubs/${raw.id}`,
       attribution:
         raw.matchedInterests && raw.matchedInterests.length > 0
-          ? `Because you're interested in ${raw.matchedInterests.join(", ")}`
+          ? `Matched: ${raw.matchedInterests.slice(0, 2).join(" · ")}`
           : undefined,
     };
   }
@@ -207,6 +211,17 @@ export default function FeedPage() {
     setSavedMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleShare = (item: FeedItem) => {
+    if (typeof window !== "undefined") {
+      const url = `${window.location.origin}${item.actionHref || "/feed"}`;
+      navigator.clipboard.writeText(url);
+      setCopiedId(item.id);
+      setTimeout(() => setCopiedId(null), 2500);
+    }
+  };
+
   // Convert custom user posts into feed items
   const userCustomFeedItems: FeedItem[] = customPosts.map((post) => {
     let category: "Hackathon" | "Club" | "Teammate" | "Project" = "Teammate";
@@ -290,22 +305,28 @@ export default function FeedPage() {
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         
         {/* Streamlined Clean Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              Good evening, {userName} 👋
-            </h1>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                Good evening, {userName} 👋
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {allFeedItems.length} opportunities available
+                {allFeedItems.length} Opportunities
               </span>
-              <span className="text-border">•</span>
-              <span>
-                {hasPersonalizedResults
-                  ? "Personalized for your campus interests"
-                  : "Discovering campus opportunities"}
-              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              {hasPersonalizedResults
+                ? "Personalized based on your campus interests in "
+                : "Discovering verified campus hackathons, clubs, and peers"}
+              {hasPersonalizedResults && (
+                <span className="text-foreground/90 font-medium">
+                  {(interests.length > 0 ? interests : ["Artificial Intelligence", "Web Development", "Startups"])
+                    .slice(0, 3)
+                    .join(", ")}
+                </span>
+              )}
             </p>
           </div>
 
@@ -313,79 +334,98 @@ export default function FeedPage() {
           <button
             type="button"
             onClick={() => setEditInterestsOpen(true)}
-            className="h-8 px-3 rounded-xl border border-border/70 bg-card hover:bg-muted/50 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-all cursor-pointer self-start sm:self-auto shadow-2xs group shrink-0"
+            className="h-9 px-3.5 rounded-xl border border-border/70 bg-card hover:bg-muted/60 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-all cursor-pointer self-start sm:self-auto shadow-2xs group shrink-0"
             title="Edit your interest tags"
           >
             <Sparkles className="w-3.5 h-3.5 text-primary group-hover:rotate-12 transition-transform" />
             <span className="font-semibold text-foreground text-xs">
-              {(interests.length > 0 ? interests : ["Artificial Intelligence", "Web Development", "Startups"])
-                .slice(0, 3)
-                .join(", ")}
-              {interests.length > 3 && ` +${interests.length - 3}`}
+              Preferences
             </span>
-            <span className="text-[11px] text-muted-foreground underline underline-offset-2 pl-0.5">
-              Edit
+            <span className="px-1.5 py-0.5 rounded bg-muted text-[10px] text-muted-foreground font-mono">
+              {(interests.length > 0 ? interests.length : 3)} Tags
             </span>
           </button>
         </div>
 
         {/* Filter Tabs & Search */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-border/50">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
             <button
               type="button"
               onClick={() => setActiveTab("all")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
+              className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 activeTab === "all"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-foreground text-background shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
               }`}
             >
-              All Matches ({allFeedItems.length})
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+              <span>All Matches</span>
+              <span className="text-[11px] opacity-75 font-mono">({allFeedItems.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("hackathons")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 activeTab === "hackathons"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-foreground text-background shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
               }`}
             >
-              ⚡ Hackathons ({hackathonsCount})
+              <Flame className="w-3.5 h-3.5 text-blue-500" />
+              <span>Hackathons</span>
+              <span className="text-[11px] opacity-75 font-mono">({hackathonsCount})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("clubs")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 activeTab === "clubs"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-foreground text-background shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
               }`}
             >
-              🏛 Clubs ({clubsCount})
+              <Users className="w-3.5 h-3.5 text-purple-500" />
+              <span>Clubs</span>
+              <span className="text-[11px] opacity-75 font-mono">({clubsCount})</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("teammates")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 activeTab === "teammates"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-foreground text-background shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
               }`}
             >
-              👤 Teammates ({teammatesCount})
+              <UserPlus className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Teammates</span>
+              {teammatesCount > 0 ? (
+                <span className="text-[11px] opacity-75 font-mono">({teammatesCount})</span>
+              ) : (
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">
+                  Squads
+                </span>
+              )}
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("projects")}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer shrink-0 ${
+              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 activeTab === "projects"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "bg-foreground text-background shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 font-medium"
               }`}
             >
-              🛠 Projects ({projectsCount})
+              <FolderGit2 className="w-3.5 h-3.5 text-amber-500" />
+              <span>Projects</span>
+              {projectsCount > 0 ? (
+                <span className="text-[11px] opacity-75 font-mono">({projectsCount})</span>
+              ) : (
+                <span className="text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.5 rounded-md">
+                  Build
+                </span>
+              )}
             </button>
           </div>
 
@@ -470,29 +510,21 @@ export default function FeedPage() {
               return (
                 <div
                   key={item.id}
-                  className="p-5 rounded-2xl border border-border/80 bg-card shadow-xs hover:border-primary/40 hover:shadow-md transition-all duration-200 group"
+                  className="p-5 rounded-2xl border border-border/80 bg-card shadow-xs hover:border-primary/40 hover:shadow-md hover:bg-card/95 transition-all duration-200 group"
                 >
-                  {/* Subtle Personalization Attribution Tag */}
-                  {item.attribution && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 mb-3 animate-in fade-in">
-                      <Sparkles className="w-3 h-3 text-primary shrink-0" />
-                      <span>{item.attribution}</span>
-                    </div>
-                  )}
-
-                  <div className="flex items-start gap-3.5 sm:gap-4">
+                  <div className="flex items-start gap-4">
                     {/* Visual Anchor */}
                     {item.category === "Hackathon" ? (
-                      <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex flex-col items-center justify-center shrink-0">
-                        <span className="text-[10px] uppercase font-bold tracking-wider leading-none">
+                      <div className="w-13 h-13 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex flex-col items-center justify-center shrink-0 shadow-inner">
+                        <span className="text-[10px] uppercase font-extrabold tracking-wider leading-none">
                           {item.month || "OCT"}
                         </span>
-                        <span className="text-base font-extrabold leading-none mt-1">
+                        <span className="text-lg font-black leading-none mt-1 text-foreground">
                           {item.day || "20"}
                         </span>
                       </div>
                     ) : item.category === "Club" ? (
-                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shrink-0">
+                      <div className="w-13 h-13 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl shrink-0 shadow-inner">
                         {item.title.toLowerCase().includes("ai") ||
                         item.title.toLowerCase().includes("robot")
                           ? "🤖"
@@ -504,7 +536,7 @@ export default function FeedPage() {
                           : "🏛️"}
                       </div>
                     ) : item.category === "Teammate" ? (
-                      <div className="relative w-12 h-12 rounded-xl border border-emerald-500/25 overflow-hidden shrink-0 bg-muted/20">
+                      <div className="relative w-13 h-13 rounded-2xl border border-emerald-500/25 overflow-hidden shrink-0 bg-muted/20">
                         <img
                           src={getAnimeAvatar(
                             item.actionHref?.replace("/people/", "") || item.id,
@@ -519,39 +551,63 @@ export default function FeedPage() {
                         />
                       </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
+                      <div className="w-13 h-13 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl shrink-0 shadow-inner">
                         🚀
                       </div>
                     )}
 
                     {/* Card Content Area */}
                     <div className="flex-1 min-w-0">
-                      {/* Category Badge + Status Tag + Bookmark */}
-                      <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-                        <div className="flex items-center gap-2">
+                      {/* Category Badge + Status Tag + Attribution + Actions */}
+                      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span
                             className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-md border ${item.badgeColor}`}
                           >
                             {item.category}
                           </span>
-                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/60">
                             {item.statusTag}
                           </span>
+                          {item.attribution && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">
+                              <Sparkles className="w-3 h-3" />
+                              <span>{item.attribution}</span>
+                            </span>
+                          )}
                         </div>
 
-                        {/* Save / Bookmark Toggle */}
-                        <button
-                          type="button"
-                          onClick={() => toggleSave(item.id)}
-                          className="text-muted-foreground hover:text-primary transition-colors p-1 rounded-md hover:bg-muted/60 cursor-pointer"
-                          title={isSaved ? "Saved" : "Save opportunity"}
-                        >
-                          <Bookmark
-                            className={`w-4 h-4 ${
-                              isSaved ? "fill-primary text-primary" : ""
-                            }`}
-                          />
-                        </button>
+                        {/* Save & Share Actions */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleShare(item)}
+                            className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-lg hover:bg-muted/60 cursor-pointer"
+                            title="Share opportunity link"
+                          >
+                            {copiedId === item.id ? (
+                              <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
+                                <Check className="w-3.5 h-3.5" />
+                                <span>Copied</span>
+                              </span>
+                            ) : (
+                              <Share2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleSave(item.id)}
+                            className="text-muted-foreground hover:text-primary transition-colors p-1.5 rounded-lg hover:bg-muted/60 cursor-pointer"
+                            title={isSaved ? "Saved" : "Save opportunity"}
+                          >
+                            <Bookmark
+                              className={`w-3.5 h-3.5 ${
+                                isSaved ? "fill-primary text-primary" : ""
+                              }`}
+                            />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Title */}
@@ -611,23 +667,23 @@ export default function FeedPage() {
                           })}
                         </div>
 
-                        {/* Single Decisive CTA Button */}
+                        {/* Decisive CTA Button */}
                         <div className="shrink-0 flex items-center justify-end">
                           {item.actionHref && !isDone ? (
                             <Link href={item.actionHref}>
                               <Button
                                 size="sm"
-                                className="h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
+                                className="h-8.5 px-4 rounded-xl text-xs font-semibold gap-1.5 shadow-xs cursor-pointer"
                               >
                                 <span>{item.actionLabel}</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
+                                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                               </Button>
                             </Link>
                           ) : (
                             <Button
                               size="sm"
                               onClick={() => handleAction(item.id)}
-                              className={`h-8 px-4 rounded-lg text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
+                              className={`h-8.5 px-4 rounded-xl text-xs font-semibold gap-1.5 transition-all cursor-pointer ${
                                 isDone
                                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100"
                                   : "shadow-xs"
@@ -641,7 +697,7 @@ export default function FeedPage() {
                               ) : (
                                 <>
                                   <span>{item.actionLabel}</span>
-                                  <ArrowRight className="w-3.5 h-3.5" />
+                                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                                 </>
                               )}
                             </Button>
@@ -653,6 +709,48 @@ export default function FeedPage() {
                 </div>
               );
             })}
+          </div>
+        ) : activeTab === "teammates" ? (
+          <div className="py-12 px-6 rounded-3xl border border-dashed border-emerald-500/30 bg-emerald-500/[0.03] text-center max-w-lg mx-auto my-6 animate-in fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3">
+              <UserPlus className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground mb-1">
+              Looking for Hackathon & Project Teammates?
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+              Connect with verified student builders in the People directory or post your squad requirements on Campusly to recruit engineers and designers.
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Link href="/people">
+                <Button size="sm" variant="outline" className="h-8 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Explore People Directory</span>
+                </Button>
+              </Link>
+              <Button size="sm" onClick={() => setCreateModalOpen(true)} className="h-8 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Post Squad Request</span>
+              </Button>
+            </div>
+          </div>
+        ) : activeTab === "projects" ? (
+          <div className="py-12 px-6 rounded-3xl border border-dashed border-amber-500/30 bg-amber-500/[0.03] text-center max-w-lg mx-auto my-6 animate-in fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-3">
+              <FolderGit2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-foreground mb-1">
+              Campus Project Showcases
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+              Share what you are building, open-source campus tools, or find student co-founders to bring ideas to life.
+            </p>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Button size="sm" onClick={() => setCreateModalOpen(true)} className="h-8 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Publish Project</span>
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="py-12 px-6 rounded-2xl border border-dashed border-border bg-card text-center max-w-md mx-auto my-6 animate-in fade-in">

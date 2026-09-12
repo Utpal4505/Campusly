@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { getAnimeAvatar } from "@/lib/avatars";
 import { authClient } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { useCampusStore } from "@/lib/store";
 import type { UserCard } from "@repo/schemas";
 import {
   ArrowLeft,
@@ -27,6 +29,7 @@ import {
   CheckCircle2,
   Send,
   X,
+  Edit3,
 } from "lucide-react";
 
 interface ProjectShowcase {
@@ -238,10 +241,22 @@ const students: Record<string, StudentData> = {
 
 export default function StudentProfilePage() {
   const params = useParams();
-  const rawSlug = (params?.slug as string) || "rahul-sharma";
+  const rawSlug = decodeURIComponent((params?.slug as string) || "rahul-sharma");
   const slug = rawSlug.toLowerCase();
 
+  const { user: currentUser } = useAuth();
+  const { setEditInterestsOpen } = useCampusStore();
   const [dbUser, setDbUser] = useState<UserCard | null>(null);
+
+  const isOwnProfile = Boolean(
+    currentUser &&
+      (currentUser.id === dbUser?.id ||
+        (currentUser.username &&
+          dbUser?.username &&
+          currentUser.username.toLowerCase() === dbUser.username.toLowerCase()) ||
+        (currentUser.username &&
+          slug.replace(/^@/, "") === currentUser.username.toLowerCase()))
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -405,44 +420,70 @@ export default function StudentProfilePage() {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
-                <Button
-                  size="sm"
-                  onClick={() => setIsInviteModalOpen(true)}
-                  className="rounded-xl px-4 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer h-9 bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>Invite to Team</span>
-                </Button>
+                {isOwnProfile ? (
+                  <>
+                    <Link href="/profile">
+                      <Button
+                        size="sm"
+                        className="rounded-xl px-4 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer h-9 bg-primary text-primary-foreground hover:bg-primary/90"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit Profile</span>
+                      </Button>
+                    </Link>
 
-                <Link href={`/messages/${dbUser?.username || slug}`}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-xl px-3.5 text-xs font-semibold gap-1.5 cursor-pointer h-9"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Message</span>
-                  </Button>
-                </Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditInterestsOpen(true)}
+                      className="rounded-xl px-3.5 text-xs font-semibold gap-1.5 cursor-pointer h-9"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
+                      <span>Preferences</span>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => setIsInviteModalOpen(true)}
+                      className="rounded-xl px-4 text-xs font-semibold gap-1.5 shadow-xs cursor-pointer h-9 bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Invite to Team</span>
+                    </Button>
 
-                <Button
-                  size="sm"
-                  variant={isConnected ? "outline" : "secondary"}
-                  onClick={() => setIsConnected(!isConnected)}
-                  className="rounded-xl px-3 text-xs font-semibold gap-1 cursor-pointer h-9"
-                >
-                  {isConnected ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-3.5 h-3.5" />
-                      <span>Connect</span>
-                    </>
-                  )}
-                </Button>
+                    <Link href={`/messages/${dbUser?.username || slug}`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-xl px-3.5 text-xs font-semibold gap-1.5 cursor-pointer h-9"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Message</span>
+                      </Button>
+                    </Link>
+
+                    <Button
+                      size="sm"
+                      variant={isConnected ? "outline" : "secondary"}
+                      onClick={() => setIsConnected(!isConnected)}
+                      className="rounded-xl px-3 text-xs font-semibold gap-1 cursor-pointer h-9"
+                    >
+                      {isConnected ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Connected</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Connect</span>
+                        </>
+                      )}
+                    </Button>
+                  </>
+                )}
               </div>
 
             </div>

@@ -379,4 +379,34 @@ export class UsersService {
 
     return this.getMe(userId);
   }
+
+  /**
+   * Update student profile fields (name, bio, department, yearOfStudy).
+   */
+  async updateProfile(
+    userId: string,
+    data: {
+      name?: string;
+      bio?: string;
+      department?: string;
+      yearOfStudy?: number | string;
+    },
+  ) {
+    const updateData: any = {};
+    if (data.name && data.name.trim()) updateData.name = data.name.trim();
+    if (data.bio !== undefined) updateData.bio = data.bio?.trim() || null;
+    if (data.department !== undefined)
+      updateData.department = data.department?.trim() || null;
+    if (data.yearOfStudy !== undefined && data.yearOfStudy !== null) {
+      const parsed = parseInt(String(data.yearOfStudy), 10);
+      updateData.yearOfStudy = isNaN(parsed) ? null : parsed;
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    return this.getMe(userId);
+  }
 }

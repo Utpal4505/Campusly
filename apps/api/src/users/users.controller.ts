@@ -95,4 +95,23 @@ export class UsersController {
     }
     return this.usersService.updateUsername(user.id, username);
   }
+
+  /**
+   * PATCH /users/me — update general student profile details
+   */
+  @Patch('me')
+  @UseGuards(AuthGuard)
+  async updateProfile(
+    @Req() req: Request,
+    @Body()
+    body: {
+      name?: string;
+      bio?: string;
+      department?: string;
+      yearOfStudy?: number | string;
+    },
+  ) {
+    const user = (req as any).user;
+    return this.usersService.updateProfile(user.id, body);
+  }
 }

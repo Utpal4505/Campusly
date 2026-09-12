@@ -204,6 +204,21 @@ export const authClient = {
   },
 
   /**
+   * Update student profile fields (name, bio, department, yearOfStudy).
+   */
+  async updateProfile(data: {
+    name?: string;
+    bio?: string;
+    department?: string;
+    yearOfStudy?: number | string;
+  }): Promise<UserProfile> {
+    return apiFetch<UserProfile>('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
    * Fetch personalized or discovery campus feed.
    */
   async getFeed(

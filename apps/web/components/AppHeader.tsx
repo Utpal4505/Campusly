@@ -167,18 +167,34 @@ export default function AppHeader() {
                 {menuOpen && (
                   <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 animate-in fade-in-0 zoom-in-95">
                     <div className="px-2.5 py-2 border-b border-border/60 mb-1">
-                      <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
+                      <div className="flex items-center justify-between gap-1">
+                        <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
+                        {user?.username && (
+                          <span className="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 shrink-0">
+                            @{user.username}
+                          </span>
+                        )}
+                      </div>
                       {displayEmail && (
                         <p className="text-[11px] text-muted-foreground truncate">{displayEmail}</p>
                       )}
                     </div>
 
                     <Link
+                      href="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+                    >
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      <span>View Profile</span>
+                    </Link>
+
+                    <Link
                       href="/tickets"
                       onClick={() => setMenuOpen(false)}
                       className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                     >
-                      <Ticket className="w-3.5 h-3.5 text-primary" />
+                      <Ticket className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>My Event Tickets</span>
                     </Link>
 

@@ -404,7 +404,7 @@ function LoginPageContent() {
               </div>
 
               <h2 className="text-xl font-bold tracking-tight text-foreground">
-                Verify your campus email
+                Verify your email
               </h2>
               <p className="text-xs text-muted-foreground mt-1 mb-5">
                 We sent a 6-digit verification code to <span className="font-semibold text-foreground">{email}</span>
@@ -498,12 +498,12 @@ function LoginPageContent() {
                   </div>
                 )}
 
-                {/* Campus Handle Field (Register Mode Only) */}
+                {/* Username Field (Register Mode Only) */}
                 {mode === "register" && (
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="block text-xs font-semibold text-foreground">
-                        Campus Handle <span className="text-primary">*</span>
+                        Username <span className="text-primary"></span>
                       </label>
                       {usernameStatus === "checking" && (
                         <span className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -582,7 +582,7 @@ function LoginPageContent() {
                 {/* Email Field */}
                 <div>
                   <label className="block text-xs font-semibold text-foreground mb-1.5">
-                    Campus Email
+                    Email
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -591,7 +591,7 @@ function LoginPageContent() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="student@university.edu"
+                      placeholder="student@example.com"
                       className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
                     />
                   </div>

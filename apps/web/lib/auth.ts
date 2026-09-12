@@ -5,6 +5,10 @@ import type {
   ClubCard,
   ClubDetail,
   UserCard,
+  PostCard,
+  CreateEventInput,
+  CreateClubInput,
+  CreatePostInput,
 } from '@repo/schemas';
 import { apiFetch } from './api';
 
@@ -231,6 +235,36 @@ export const authClient = {
   async getUser(id: string): Promise<UserCard> {
     return apiFetch<UserCard>(`/users/${id}`, {
       method: 'GET',
+    });
+  },
+
+  /**
+   * Create a new campus event in PostgreSQL.
+   */
+  async createEvent(payload: CreateEventInput): Promise<EventDetail> {
+    return apiFetch<EventDetail>('/events', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Create a new campus club in PostgreSQL.
+   */
+  async createClub(payload: CreateClubInput): Promise<ClubDetail> {
+    return apiFetch<ClubDetail>('/clubs', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Create a new community post or teammate request in PostgreSQL.
+   */
+  async createPost(payload: CreatePostInput): Promise<PostCard> {
+    return apiFetch<PostCard>('/posts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 };

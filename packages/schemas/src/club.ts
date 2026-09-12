@@ -24,3 +24,12 @@ export const clubDetailSchema = clubCardSchema.extend({
 });
 
 export type ClubDetail = z.infer<typeof clubDetailSchema>;
+
+export const createClubSchema = z.object({
+  name: z.string().min(3, "Club name must be at least 3 characters"),
+  description: z.string().optional().nullable(),
+  interestIds: z.array(z.string()).optional(),
+  interestNames: z.array(z.string()).optional(),
+});
+
+export type CreateClubInput = z.infer<typeof createClubSchema>;

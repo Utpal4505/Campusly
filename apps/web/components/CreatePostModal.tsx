@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCampusStore, CustomPost } from "@/lib/store";
+import { authClient } from "@/lib/auth";
 import {
   X,
   Sparkles,
@@ -13,6 +14,8 @@ import {
   Plus,
   Building2,
   ShieldCheck,
+  Loader2,
+  ArrowRight,
 } from "lucide-react";
 
 export default function CreatePostModal() {
@@ -21,6 +24,8 @@ export default function CreatePostModal() {
   const { isCreateModalOpen, setCreateModalOpen, addCustomPost, userName } = useCampusStore();
 
   const [postType, setPostType] = useState<"teammate" | "event">("teammate");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Determine if inside a specific club page
   const isClubPage = pathname?.startsWith("/clubs/") ?? false;
@@ -66,63 +71,104 @@ export default function CreatePostModal() {
     );
   };
 
-  const handlePublish = (e: React.FormEvent) => {
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    if (postType === "teammate") {
-      if (!projectTitle.trim() || !pitch.trim()) return;
+    try {
+      if (postType === "teammate") {
+        if (!projectTitle.trim() || !pitch.trim()) {
+          setIsSubmitting(false);
+          return;
+        }
 
-      const newPost: CustomPost = {
-        id: `post-${Date.now()}`,
-        type: "teammates",
-        category: "Teammate Request",
-        title: `${userName} — ${projectTitle}`,
-        author: userName,
-        avatar: userName.charAt(0).toUpperCase(),
-        meta: `Posted by ${userName} · Looking for ${roleNeeded || "Collaborators"}`,
-        description: pitch,
-        tags: selectedTags.length > 0 ? selectedTags : ["Teammate Request"],
-        createdAt: "Just now",
-        actionLabel: "Connect & Team Up",
-        actionDoneLabel: "Invite Sent ✓",
-      };
+        // Persist to real PostgreSQL Post table
+        await authClient
+          .createPost({
+            title: `${userName} — ${projectTitle.trim()}`,
+            content: `${roleNeeded ? `Role: ${roleNeeded}\n\n` : ""}${pitch.trim()}`,
+          })
+          .catch((err) => console.warn("Failed to persist post to DB:", err));
 
-      addCustomPost(newPost);
-    } else if (postType === "event") {
-      if (!eventTitle.trim() || !eventDesc.trim()) return;
+        const newPost: CustomPost = {
+          id: `post-${Date.now()}`,
+          type: "teammates",
+          category: "Teammate Request",
+          title: `${userName} — ${projectTitle}`,
+          author: userName,
+          avatar: userName.charAt(0).toUpperCase(),
+          meta: `Posted by ${userName} · Looking for ${roleNeeded || "Collaborators"}`,
+          description: pitch,
+          tags: selectedTags.length > 0 ? selectedTags : ["Teammate Request"],
+          createdAt: "Just now",
+          actionLabel: "Connect & Team Up",
+          actionDoneLabel: "Invite Sent ✓",
+        };
 
-      const newPost: CustomPost = {
-        id: `event-${Date.now()}`,
-        type: "events",
-        category: "Campus Event",
-        title: eventTitle,
-        author: hostClub,
-        avatar: hostClub.substring(0, 2).toUpperCase(),
-        meta: `🏛️ Hosted by ${hostClub} · ${eventTiming || "This Weekend"} · ${eventVenue || "Campus Grounds"}`,
-        description: eventDesc,
-        tags: selectedTags.length > 0 ? selectedTags : ["Event", "Workshop"],
-        createdAt: "Just now",
-        actionLabel: "Register for Event",
-        actionDoneLabel: "Registered ✓",
-        actionHref: "/events",
-      };
+        addCustomPost(newPost);
+      } else if (postType === "event") {
+        if (!eventTitle.trim() || !eventDesc.trim()) {
+          setIsSubmitting(false);
+          return;
+        }
 
-      addCustomPost(newPost);
-    }
+        // Persist to real PostgreSQL Event table
+        const realEvent = await authClient
+          .createEvent({
+            title: eventTitle.trim(),
+            description: `🏛️ Hosted by ${hostClub}. ${eventDesc.trim()}`,
+            date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            location: eventVenue.trim() || "Campus Grounds",
+            interestNames: selectedTags,
+          })
+          .catch((err) => {
+            console.warn("Failed to persist event to DB:", err);
+            return null;
+          });
 
-    setCreateModalOpen(false);
+        const newPost: CustomPost = {
+          id: realEvent?.id || `event-${Date.now()}`,
+          type: "events",
+          category: "Campus Event",
+          title: eventTitle,
+          author: hostClub,
+          avatar: hostClub.substring(0, 2).toUpperCase(),
+          meta: `🏛️ Hosted by ${hostClub} · ${eventTiming || "Upcoming"} · ${eventVenue || "Campus Grounds"}`,
+          description: eventDesc,
+          tags: selectedTags.length > 0 ? selectedTags : ["Event", "Workshop"],
+          createdAt: "Just now",
+          actionLabel: "Register for Event",
+          actionDoneLabel: "Registered ✓",
+          actionHref: realEvent ? `/events/${realEvent.id}` : "/events",
+        };
 
-    // Reset form
-    setProjectTitle("");
-    setRoleNeeded("");
-    setPitch("");
-    setEventTitle("");
-    setEventTiming("");
-    setEventVenue("");
-    setEventDesc("");
+        addCustomPost(newPost);
+      }
 
-    if (pathname !== "/feed") {
-      router.push("/feed");
+      // Notify feed to refresh from PostgreSQL
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("campusly:preferences-updated"));
+      }
+
+      setCreateModalOpen(false);
+
+      // Reset form
+      setProjectTitle("");
+      setRoleNeeded("");
+      setPitch("");
+      setEventTitle("");
+      setEventTiming("");
+      setEventVenue("");
+      setEventDesc("");
+
+      if (pathname !== "/feed") {
+        router.push("/feed");
+      }
+    } catch (err: any) {
+      setSubmitError(err?.message || "Failed to publish. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -154,7 +200,7 @@ export default function CreatePostModal() {
         </div>
 
         {/* Post Type Selector Tabs (Focused 2-Tab Hierarchy) */}
-        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/50 text-xs mb-5">
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/50 text-xs mb-2">
           <button
             type="button"
             onClick={() => setPostType("teammate")}
@@ -179,6 +225,21 @@ export default function CreatePostModal() {
           >
             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
             <span>Club Event</span>
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between px-1 mb-4 text-[11px] text-muted-foreground">
+          <span>Starting a student organization?</span>
+          <button
+            type="button"
+            onClick={() => {
+              setCreateModalOpen(false);
+              router.push("/clubs/register");
+            }}
+            className="text-primary hover:underline font-semibold cursor-pointer inline-flex items-center gap-1"
+          >
+            <span>Register Club Page</span>
+            <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
@@ -348,12 +409,19 @@ export default function CreatePostModal() {
             </div>
           </div>
 
+          {submitError && (
+            <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+              {submitError}
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="pt-3 border-t border-border/50 flex items-center justify-end gap-2.5">
             <Button
               type="button"
               variant="outline"
               size="sm"
+              disabled={isSubmitting}
               onClick={() => setCreateModalOpen(false)}
               className="h-9 px-4 rounded-xl text-xs font-medium"
             >
@@ -362,10 +430,20 @@ export default function CreatePostModal() {
             <Button
               type="submit"
               size="sm"
+              disabled={isSubmitting}
               className="h-9 px-5 rounded-xl text-xs font-semibold shadow-xs gap-1.5 cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Publish {postType === "event" ? "Club Event" : "Teammate Request"}</span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Publishing...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Publish {postType === "event" ? "Club Event" : "Teammate Request"}</span>
+                </>
+              )}
             </Button>
           </div>
 

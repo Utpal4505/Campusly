@@ -192,4 +192,55 @@ export class EventsService {
       registeredAt: registration.createdAt,
     };
   }
+
+  /**
+   * Create a new campus event and link associated interests.
+   */
+  async create(
+    data: {
+      title: string;
+      description?: string | null;
+      date: Date | string;
+      location?: string | null;
+      interestIds?: string[];
+      interestNames?: string[];
+    },
+    creatorId: string,
+  ) {
+    const eventDate = new Date(data.date);
+
+    const event = await this.prisma.event.create({
+      data: {
+        title: data.title,
+        description: data.description || null,
+        date: isNaN(eventDate.getTime()) ? new Date() : eventDate,
+        location: data.location || 'LPU Campus',
+        creatorId,
+      },
+    });
+
+    let interestIdsToLink: string[] = [];
+    if (data.interestIds && data.interestIds.length > 0) {
+      interestIdsToLink = data.interestIds;
+    } else if (data.interestNames && data.interestNames.length > 0) {
+      const found = await this.prisma.interest.findMany({
+        where: {
+          name: { in: data.interestNames, mode: 'insensitive' },
+        },
+      });
+      interestIdsToLink = found.map((i) => i.id);
+    }
+
+    if (interestIdsToLink.length > 0) {
+      await this.prisma.eventInterest.createMany({
+        data: interestIdsToLink.map((interestId) => ({
+          eventId: event.id,
+          interestId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    return this.findOne(event.id);
+  }
 }

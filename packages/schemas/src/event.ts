@@ -30,3 +30,14 @@ export const eventDetailSchema = eventCardSchema.extend({
 });
 
 export type EventDetail = z.infer<typeof eventDetailSchema>;
+
+export const createEventSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().optional().nullable(),
+  date: z.date().or(z.string()),
+  location: z.string().optional().nullable(),
+  interestIds: z.array(z.string()).optional(),
+  interestNames: z.array(z.string()).optional(),
+});
+
+export type CreateEventInput = z.infer<typeof createEventSchema>;

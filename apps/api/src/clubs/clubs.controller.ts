@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -20,6 +21,19 @@ export class ClubsController {
   @Get()
   async getClubs() {
     return this.clubsService.findAll();
+  }
+
+  /**
+   * POST /clubs — create a new campus club
+   */
+  @Post()
+  async createClub(
+    @Body() body: any,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    const creatorId = user?.id || 'seed-organizer-user';
+    return this.clubsService.create(body, creatorId);
   }
 
   /**

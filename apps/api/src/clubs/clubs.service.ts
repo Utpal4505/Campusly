@@ -187,4 +187,58 @@ export class ClubsService {
       joinedAt: membership.createdAt,
     };
   }
+
+  /**
+   * Create a new campus club and link associated interests.
+   */
+  async create(
+    data: {
+      name: string;
+      description?: string | null;
+      interestIds?: string[];
+      interestNames?: string[];
+    },
+    creatorId: string,
+  ) {
+    const club = await this.prisma.club.create({
+      data: {
+        name: data.name,
+        description: data.description || null,
+        creatorId,
+      },
+    });
+
+    // Add creator as club leader/member
+    await this.prisma.clubMember.create({
+      data: {
+        userId: creatorId,
+        clubId: club.id,
+        role: 'leader',
+      },
+    });
+
+    let interestIdsToLink: string[] = [];
+    if (data.interestIds && data.interestIds.length > 0) {
+      interestIdsToLink = data.interestIds;
+    } else if (data.interestNames && data.interestNames.length > 0) {
+      const found = await this.prisma.interest.findMany({
+        where: {
+          name: { in: data.interestNames, mode: 'insensitive' },
+        },
+      });
+      interestIdsToLink = found.map((i) => i.id);
+    }
+
+    if (interestIdsToLink.length > 0) {
+      await this.prisma.clubInterest.createMany({
+        data: interestIdsToLink.map((interestId) => ({
+          clubId: club.id,
+          interestId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    return this.findOne(club.id);
+  }
 }

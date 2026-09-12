@@ -21,7 +21,9 @@ import {
   Radio,
   MessageSquare,
   Wand2,
+  Loader2,
 } from "lucide-react";
+import { authClient } from "@/lib/auth";
 
 const CLUB_EMOJIS = ["🤖", "🎨", "🚀", "💻", "⚡", "🌐", "🛡️", "🧬", "📐", "♟️"];
 
@@ -40,6 +42,8 @@ export default function RegisterClubPage() {
   const [cohortSpots, setCohortSpots] = useState("10");
   const [communityLink, setCommunityLink] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>(["Web3", "Open Source", "Recruiting"]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const tagOptions = [
     "Technical",
@@ -75,38 +79,83 @@ export default function RegisterClubPage() {
     setSelectedTags(["Web3", "Open Source", "Startups", "Recruiting"]);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clubName.trim()) return;
 
-    const slug = clubName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+    setIsSubmitting(true);
+    setSubmitError(null);
 
-    const finalTags = [
-      ...selectedTags,
-      cohortSpots ? `${cohortSpots} spots open` : "Recruiting",
-    ];
+    const fullDescription = tagline ? `${tagline} ${description}` : description || "Campus student club actively recruiting new cohort members.";
 
-    const newClubPost: CustomPost = {
-      id: `club-${Date.now()}`,
-      type: "clubs",
-      category: "Student Club",
-      title: clubName,
-      author: leadName,
-      avatar: selectedEmoji,
-      meta: `${meetingTime || "Every Wednesday · 6:00 PM"} · ${venue || "Innovation Hub"} · Lead: ${leadName}`,
-      description: tagline ? `${tagline} ${description}` : description || "Campus student club actively recruiting new cohort members.",
-      tags: finalTags,
-      createdAt: "Just now",
-      actionLabel: "View Club & Join",
-      actionDoneLabel: "Applied ✓",
-      actionHref: `/clubs/${slug || "ai-robotics-society"}`,
-    };
+    try {
+      const createdClub = await authClient.createClub({
+        name: clubName.trim(),
+        description: fullDescription,
+        interestNames: selectedTags,
+      });
 
-    addCustomPost(newClubPost);
-    router.push("/feed");
+      const slug = createdClub?.id || clubName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const finalTags = [
+        ...selectedTags,
+        cohortSpots ? `${cohortSpots} spots open` : "Recruiting",
+      ];
+
+      const newClubPost: CustomPost = {
+        id: `club-${createdClub?.id || Date.now()}`,
+        type: "clubs",
+        category: "Student Club",
+        title: clubName,
+        author: leadName,
+        avatar: selectedEmoji,
+        meta: `${meetingTime || "Every Wednesday · 6:00 PM"} · ${venue || "Innovation Hub"} · Lead: ${leadName}`,
+        description: fullDescription,
+        tags: finalTags,
+        createdAt: "Just now",
+        actionLabel: "View Club & Join",
+        actionDoneLabel: "Applied ✓",
+        actionHref: `/clubs/${slug}`,
+      };
+
+      addCustomPost(newClubPost);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("campusly:preferences-updated"));
+      }
+
+      router.push(`/clubs/${slug}`);
+    } catch (err: any) {
+      console.error("Failed to register club in API:", err);
+      const fallbackSlug = clubName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const newClubPost: CustomPost = {
+        id: `club-${Date.now()}`,
+        type: "clubs",
+        category: "Student Club",
+        title: clubName,
+        author: leadName,
+        avatar: selectedEmoji,
+        meta: `${meetingTime || "Every Wednesday · 6:00 PM"} · ${venue || "Innovation Hub"} · Lead: ${leadName}`,
+        description: fullDescription,
+        tags: [...selectedTags, cohortSpots ? `${cohortSpots} spots open` : "Recruiting"],
+        createdAt: "Just now",
+        actionLabel: "View Club & Join",
+        actionDoneLabel: "Applied ✓",
+        actionHref: `/clubs/${fallbackSlug || "ai-robotics-society"}`,
+      };
+
+      addCustomPost(newClubPost);
+      router.push("/feed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -358,16 +407,32 @@ export default function RegisterClubPage() {
               </div>
             </div>
 
+            {submitError && (
+              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                {submitError}
+              </div>
+            )}
+
             {/* Submit Action */}
             <div className="pt-2">
               <Button
                 type="submit"
                 size="lg"
+                disabled={isSubmitting}
                 className="w-full rounded-xl text-xs font-bold gap-2 shadow-xs cursor-pointer h-11"
               >
-                <Building2 className="w-4 h-4" />
-                <span>Publish Club to Live Campus Feed</span>
-                <ArrowRight className="w-4 h-4" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Registering Club in Database...</span>
+                  </>
+                ) : (
+                  <>
+                    <Building2 className="w-4 h-4" />
+                    <span>Publish Club to Live Campus Feed</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </div>
 

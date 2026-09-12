@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module.js';
 import { EventsModule } from './events/events.module.js';
 import { ClubsModule } from './clubs/clubs.module.js';
 import { FeedModule } from './feed/feed.module.js';
+import { PostsModule } from './posts/posts.module.js';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FeedModule } from './feed/feed.module.js';
     EventsModule,
     ClubsModule,
     FeedModule,
+    PostsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

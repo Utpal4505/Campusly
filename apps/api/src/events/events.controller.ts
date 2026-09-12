@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
@@ -20,6 +21,19 @@ export class EventsController {
   @Get()
   async getEvents() {
     return this.eventsService.findAll();
+  }
+
+  /**
+   * POST /events — create a new campus event
+   */
+  @Post()
+  async createEvent(
+    @Body() body: any,
+    @Req() req: Request,
+  ) {
+    const user = (req as any).user;
+    const creatorId = user?.id || 'seed-organizer-user';
+    return this.eventsService.create(body, creatorId);
   }
 
   /**

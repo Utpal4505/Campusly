@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useCampusStore, CustomPost } from "@/lib/store";
@@ -13,6 +13,7 @@ import {
   Plus,
   Check,
   Building2,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function CreatePostModal() {
@@ -22,13 +23,29 @@ export default function CreatePostModal() {
 
   const [postType, setPostType] = useState<"teammate" | "event" | "club">("teammate");
 
+  // Determine if inside a specific club page
+  const isClubPage = pathname?.startsWith("/clubs/") ?? false;
+  const clubSlugFromUrl = isClubPage ? pathname.replace("/clubs/", "").split("/")[0] : "";
+
+  const CLUB_HOST_NAMES: Record<string, string> = {
+    "ai-robotics-society": "AI & Robotics Society",
+    "design-guild": "Design Guild LPU",
+    "cybersecurity": "CyberSecurity & Ethical Hacking Lab",
+  };
+
+  const detectedClubName =
+    clubSlugFromUrl && CLUB_HOST_NAMES[clubSlugFromUrl]
+      ? CLUB_HOST_NAMES[clubSlugFromUrl]
+      : "AI & Robotics Society";
+
   // Teammate post fields
   const [projectTitle, setProjectTitle] = useState("");
   const [roleNeeded, setRoleNeeded] = useState("");
   const [pitch, setPitch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>(["AI", "Web Dev"]);
 
-  // Event post fields
+  // Event post fields (with Club Host organization)
+  const [hostClub, setHostClub] = useState(detectedClubName);
   const [eventTitle, setEventTitle] = useState("");
   const [eventTiming, setEventTiming] = useState("");
   const [eventVenue, setEventVenue] = useState("");
@@ -38,6 +55,14 @@ export default function CreatePostModal() {
   const [clubTitle, setClubTitle] = useState("");
   const [clubVenue, setClubVenue] = useState("");
   const [clubDesc, setClubDesc] = useState("");
+
+  // If opened from a club page, automatically pre-fill host and switch to event tab
+  useEffect(() => {
+    if (clubSlugFromUrl && CLUB_HOST_NAMES[clubSlugFromUrl]) {
+      setHostClub(CLUB_HOST_NAMES[clubSlugFromUrl]);
+      setPostType("event");
+    }
+  }, [clubSlugFromUrl]);
 
   const tagOptions = ["AI", "Web Dev", "Design", "Startups", "Mobile", "Hackathon", "Open Source"];
 
@@ -77,14 +102,15 @@ export default function CreatePostModal() {
         type: "events",
         category: "Campus Event",
         title: eventTitle,
-        author: userName,
-        avatar: "CE",
-        meta: `${eventTiming || "This Weekend"} · ${eventVenue || "Campus Grounds"}`,
+        author: hostClub,
+        avatar: hostClub.substring(0, 2).toUpperCase(),
+        meta: `🏛️ Hosted by ${hostClub} · ${eventTiming || "This Weekend"} · ${eventVenue || "Campus Grounds"}`,
         description: eventDesc,
-        tags: selectedTags.length > 0 ? selectedTags : ["Event"],
+        tags: selectedTags.length > 0 ? selectedTags : ["Event", "Workshop"],
         createdAt: "Just now",
         actionLabel: "Register for Event",
         actionDoneLabel: "Registered ✓",
+        actionHref: "/events",
       };
 
       addCustomPost(newPost);
@@ -148,7 +174,7 @@ export default function CreatePostModal() {
             </div>
             <div>
               <h2 className="text-base font-bold tracking-tight">Create on Campusly</h2>
-              <p className="text-[11px] text-muted-foreground">Broadcast to active students on your campus</p>
+              <p className="text-[11px] text-muted-foreground">Broadcast opportunities to active students across campus</p>
             </div>
           </div>
 
@@ -173,7 +199,7 @@ export default function CreatePostModal() {
             }`}
           >
             <Users className="w-3.5 h-3.5 text-blue-500" />
-            <span>Teammate</span>
+            <span>Peer Teammate</span>
           </button>
 
           <button
@@ -186,7 +212,7 @@ export default function CreatePostModal() {
             }`}
           >
             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Event</span>
+            <span>Club Event</span>
           </button>
 
           <button
@@ -251,6 +277,40 @@ export default function CreatePostModal() {
             </>
           ) : postType === "event" ? (
             <>
+              {/* Host Organization Selector */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-primary" />
+                    <span>Host Club / Organization</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>Verified Organization</span>
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={hostClub}
+                    onChange={(e) => setHostClub(e.target.value)}
+                    className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground font-medium cursor-pointer"
+                  >
+                    <option value="AI & Robotics Society">AI & Robotics Society (You are Lead Organizer)</option>
+                    <option value="Design Guild LPU">Design Guild LPU</option>
+                    <option value="CyberSecurity & Ethical Hacking Lab">CyberSecurity & Ethical Hacking Lab</option>
+                    <option value="Independent Student Sprint">Independent Student Sprint (Approved Organizer)</option>
+                  </select>
+                </div>
+
+                {isClubPage && clubSlugFromUrl && (
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
+                    <span>✓ Context pre-filled from club portal:</span>
+                    <strong>{detectedClubName}</strong>
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 block">
                   Event Title
@@ -281,7 +341,7 @@ export default function CreatePostModal() {
 
                 <div>
                   <label className="text-xs font-semibold text-foreground mb-1 block">
-                    Venue / Location
+                    Venue / Campus Location
                   </label>
                   <input
                     type="text"
@@ -295,12 +355,12 @@ export default function CreatePostModal() {
 
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Event Description
+                  Event Description & Attendee Takeaways
                 </label>
                 <textarea
                   value={eventDesc}
                   onChange={(e) => setEventDesc(e.target.value)}
-                  placeholder="What will attendees learn? What should they bring?"
+                  placeholder="What will attendees learn? What should they bring? Who is welcome?"
                   rows={3}
                   required
                   className="w-full p-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground resize-none"
@@ -392,10 +452,10 @@ export default function CreatePostModal() {
             <Button
               type="submit"
               size="sm"
-              className="h-9 px-5 rounded-xl text-xs font-semibold shadow-xs gap-1.5"
+              className="h-9 px-5 rounded-xl text-xs font-semibold shadow-xs gap-1.5 cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Publish Post
+              <span>Publish {postType === "event" ? "Club Event" : "Post"}</span>
             </Button>
           </div>
 

@@ -11,7 +11,6 @@ import {
   Calendar,
   Zap,
   Plus,
-  Check,
   Building2,
   ShieldCheck,
 } from "lucide-react";
@@ -21,7 +20,7 @@ export default function CreatePostModal() {
   const pathname = usePathname();
   const { isCreateModalOpen, setCreateModalOpen, addCustomPost, userName } = useCampusStore();
 
-  const [postType, setPostType] = useState<"teammate" | "event" | "club">("teammate");
+  const [postType, setPostType] = useState<"teammate" | "event">("teammate");
 
   // Determine if inside a specific club page
   const isClubPage = pathname?.startsWith("/clubs/") ?? false;
@@ -50,11 +49,6 @@ export default function CreatePostModal() {
   const [eventTiming, setEventTiming] = useState("");
   const [eventVenue, setEventVenue] = useState("");
   const [eventDesc, setEventDesc] = useState("");
-
-  // Club post fields
-  const [clubTitle, setClubTitle] = useState("");
-  const [clubVenue, setClubVenue] = useState("");
-  const [clubDesc, setClubDesc] = useState("");
 
   // If opened from a club page, automatically pre-fill host and switch to event tab
   useEffect(() => {
@@ -114,31 +108,6 @@ export default function CreatePostModal() {
       };
 
       addCustomPost(newPost);
-    } else if (postType === "club") {
-      if (!clubTitle.trim() || !clubDesc.trim()) return;
-
-      const slug = clubTitle
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
-
-      const newPost: CustomPost = {
-        id: `club-${Date.now()}`,
-        type: "clubs",
-        category: "Student Club",
-        title: clubTitle,
-        author: userName,
-        avatar: clubTitle.substring(0, 2).toUpperCase(),
-        meta: `${clubVenue || "CS Hall 3"} · Lead: ${userName}`,
-        description: clubDesc,
-        tags: selectedTags.length > 0 ? selectedTags : ["Campus Club", "Recruiting"],
-        createdAt: "Just now",
-        actionLabel: "View Club & Join",
-        actionDoneLabel: "Applied ✓",
-        actionHref: `/clubs/${slug || "ai-robotics-society"}`,
-      };
-
-      addCustomPost(newPost);
     }
 
     setCreateModalOpen(false);
@@ -151,9 +120,6 @@ export default function CreatePostModal() {
     setEventTiming("");
     setEventVenue("");
     setEventDesc("");
-    setClubTitle("");
-    setClubVenue("");
-    setClubDesc("");
 
     if (pathname !== "/feed") {
       router.push("/feed");
@@ -187,12 +153,12 @@ export default function CreatePostModal() {
           </button>
         </div>
 
-        {/* Post Type Selector Tabs */}
-        <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border/50 text-xs mb-5">
+        {/* Post Type Selector Tabs (Focused 2-Tab Hierarchy) */}
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/50 text-xs mb-5">
           <button
             type="button"
             onClick={() => setPostType("teammate")}
-            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`flex-1 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               postType === "teammate"
                 ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
                 : "text-muted-foreground hover:text-foreground"
@@ -205,7 +171,7 @@ export default function CreatePostModal() {
           <button
             type="button"
             onClick={() => setPostType("event")}
-            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`flex-1 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               postType === "event"
                 ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
                 : "text-muted-foreground hover:text-foreground"
@@ -213,19 +179,6 @@ export default function CreatePostModal() {
           >
             <Calendar className="w-3.5 h-3.5 text-emerald-500" />
             <span>Club Event</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPostType("club")}
-            className={`flex-1 py-1.5 rounded-lg font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
-              postType === "club"
-                ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5 text-purple-500" />
-            <span>Register Club</span>
           </button>
         </div>
 
@@ -275,7 +228,7 @@ export default function CreatePostModal() {
                 />
               </div>
             </>
-          ) : postType === "event" ? (
+          ) : (
             <>
               {/* Host Organization Selector */}
               <div>
@@ -367,49 +320,6 @@ export default function CreatePostModal() {
                 />
               </div>
             </>
-          ) : (
-            <>
-              <div>
-                <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Club / Organization Name
-                </label>
-                <input
-                  type="text"
-                  value={clubTitle}
-                  onChange={(e) => setClubTitle(e.target.value)}
-                  placeholder="e.g. Blockchain & Web3 Society"
-                  required
-                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Meeting Frequency & Venue
-                </label>
-                <input
-                  type="text"
-                  value={clubVenue}
-                  onChange={(e) => setClubVenue(e.target.value)}
-                  placeholder="e.g. Every Thursday · 6:00 PM · CS Hall 3"
-                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Club Mission & Member Perks
-                </label>
-                <textarea
-                  value={clubDesc}
-                  onChange={(e) => setClubDesc(e.target.value)}
-                  placeholder="What is your club's focus? What projects will members work on? What perks are offered?"
-                  rows={3}
-                  required
-                  className="w-full p-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground resize-none"
-                />
-              </div>
-            </>
           )}
 
           {/* Tags */}
@@ -455,7 +365,7 @@ export default function CreatePostModal() {
               className="h-9 px-5 rounded-xl text-xs font-semibold shadow-xs gap-1.5 cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Publish {postType === "event" ? "Club Event" : "Post"}</span>
+              <span>Publish {postType === "event" ? "Club Event" : "Teammate Request"}</span>
             </Button>
           </div>
 

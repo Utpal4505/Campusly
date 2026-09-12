@@ -44,6 +44,7 @@ export default function EventDetailPage() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [paymentReceipt, setPaymentReceipt] = useState<string | null>(null);
+  const [ticketId, setTicketId] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Load Razorpay Checkout SDK
@@ -153,6 +154,9 @@ export default function EventDetailPage() {
       if (order.isFree || order.registered) {
         setIsRegistered(true);
         setPaymentReceipt(`FREE-${Date.now().toString().slice(-6)}`);
+        if (order.ticket?.id) {
+          setTicketId(order.ticket.id);
+        }
         setIsRegistering(false);
         return;
       }
@@ -175,12 +179,15 @@ export default function EventDetailPage() {
           },
           handler: async (response: any) => {
             try {
-              await authClient.verifyPayment(event.id, {
+              const verifyRes = await authClient.verifyPayment(event.id, {
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
               });
               setPaymentReceipt(response.razorpay_payment_id);
+              if (verifyRes?.ticket?.id) {
+                setTicketId(verifyRes.ticket.id);
+              }
               setIsRegistered(true);
             } catch (err: any) {
               setRegisterError(err?.message || "Payment verification failed.");
@@ -199,12 +206,15 @@ export default function EventDetailPage() {
         rzp.open();
       } else {
         // Dev / test mode fallback when Razorpay script isn't loaded:
-        await authClient.verifyPayment(event.id, {
+        const simRes = await authClient.verifyPayment(event.id, {
           razorpayOrderId: order.orderId || `order_${Date.now()}`,
           razorpayPaymentId: `pay_sim_${Date.now().toString().slice(-6)}`,
           razorpaySignature: "simulated_success",
         });
         setPaymentReceipt(`pay_sim_${Date.now().toString().slice(-6)}`);
+        if (simRes?.ticket?.id) {
+          setTicketId(simRes.ticket.id);
+        }
         setIsRegistered(true);
         setIsRegistering(false);
       }
@@ -528,13 +538,25 @@ export default function EventDetailPage() {
                     </div>
                   </div>
 
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsRegistered(false)}
-                    className="w-full rounded-xl text-xs font-semibold cursor-pointer h-9 text-muted-foreground hover:text-foreground"
-                  >
-                    View Registration Options
-                  </Button>
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
+                    <Link
+                      href={ticketId ? `/tickets/${ticketId}` : "/tickets"}
+                      className="w-full sm:flex-1"
+                    >
+                      <Button className="w-full rounded-xl text-xs font-bold cursor-pointer h-9 gap-1.5 shadow-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Ticket className="w-3.5 h-3.5" />
+                        <span>View Digital Ticket Pass</span>
+                      </Button>
+                    </Link>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsRegistered(false)}
+                      className="w-full sm:w-auto rounded-xl text-xs font-semibold cursor-pointer h-9 text-muted-foreground hover:text-foreground"
+                    >
+                      Options
+                    </Button>
+                  </div>
                 </div>
               ) : (
                 /* Registration State */

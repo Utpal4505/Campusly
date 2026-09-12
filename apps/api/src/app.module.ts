@@ -10,6 +10,7 @@ import { ClubsModule } from './clubs/clubs.module.js';
 import { FeedModule } from './feed/feed.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
+import { TicketsModule } from './tickets/tickets.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PaymentsModule } from './payments/payments.module.js';
     FeedModule,
     PostsModule,
     PaymentsModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

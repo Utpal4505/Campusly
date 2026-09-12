@@ -7,12 +7,14 @@ import {
 import crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { EventsService } from '../events/events.service.js';
+import { TicketsService } from '../tickets/tickets.service.js';
 
 @Injectable()
 export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventsService: EventsService,
+    private readonly ticketsService: TicketsService,
   ) {}
 
   /**
@@ -63,11 +65,14 @@ export class PaymentsService {
         },
       });
 
+      const ticket = await this.ticketsService.mintTicketForRegistration(reg.id);
+
       return {
         isFree: true,
         registered: true,
-        message: 'Successfully registered for free event',
+        message: 'Successfully registered for free event. Ticket issued!',
         registration: reg,
+        ticket,
       };
     }
 
@@ -200,10 +205,13 @@ export class PaymentsService {
       },
     });
 
+    const ticket = await this.ticketsService.mintTicketForRegistration(registration.id);
+
     return {
       success: true,
-      message: 'Payment verified and registration confirmed!',
+      message: 'Payment verified and registration confirmed! Ticket issued!',
       registration,
+      ticket,
       event: {
         id: event.id,
         title: event.title,

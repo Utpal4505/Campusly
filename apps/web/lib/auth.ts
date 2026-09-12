@@ -9,6 +9,7 @@ import type {
   CreateEventInput,
   CreateClubInput,
   CreatePostInput,
+  TicketItem,
 } from '@repo/schemas';
 import { apiFetch } from './api';
 
@@ -324,6 +325,8 @@ export const authClient = {
     keyId?: string;
     eventTitle?: string;
     price?: number;
+    ticket?: TicketItem;
+    registration?: any;
   }> {
     return apiFetch(`/events/${eventId}/payment/order`, {
       method: 'POST',
@@ -344,10 +347,29 @@ export const authClient = {
     success: boolean;
     message: string;
     registration: any;
+    ticket?: TicketItem;
   }> {
     return apiFetch(`/events/${eventId}/payment/verify`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Fetch all event tickets for the authenticated student.
+   */
+  async getTickets(): Promise<TicketItem[]> {
+    return apiFetch<TicketItem[]>('/tickets', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Fetch a single ticket by ID or ticketNumber.
+   */
+  async getTicket(idOrNumber: string): Promise<TicketItem> {
+    return apiFetch<TicketItem>(`/tickets/${idOrNumber}`, {
+      method: 'GET',
     });
   },
 };

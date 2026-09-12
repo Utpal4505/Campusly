@@ -40,6 +40,7 @@ model User {
   receivedConns   Connection[]  @relation("receiver")
   createdEvents   Event[]
   createdClubs    Club[]
+  tickets         Ticket[]
 
   @@map("user")
 }
@@ -138,6 +139,7 @@ model Event {
   creator       User                @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   registrations EventRegistration[]
   interests     EventInterest[]
+  tickets       Ticket[]
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
@@ -154,6 +156,7 @@ model EventRegistration {
   amount        Int      @default(0)
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticket        Ticket?
   createdAt     DateTime @default(now())
 
   @@unique([userId, eventId])
@@ -222,3 +225,24 @@ model Connection {
   @@unique([senderId, receiverId])
   @@map("connection")
 }
+
+model Ticket {
+  id             String            @id @default(cuid())
+  ticketNumber   String            @unique
+  userId         String
+  eventId        String
+  registrationId String            @unique
+  qrCode         String            @default("")
+  status         String            @default("CONFIRMED")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([eventId])
+  @@map("ticket")
+}
+

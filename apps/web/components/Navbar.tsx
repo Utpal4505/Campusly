@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const isLandingPage = pathname === "/";
+
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
@@ -26,27 +30,29 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Center Segmented Navigation Pills */}
-        <div className="hidden md:flex items-center p-1 rounded-xl bg-muted/40 border border-border/60 text-xs">
-          <Link
-            href="/feed"
-            className="px-3.5 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-          >
-            For You
-          </Link>
-          <Link
-            href="/events"
-            className="px-3.5 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-          >
-            Events
-          </Link>
-          <Link
-            href="/people"
-            className="px-3.5 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
-          >
-            People
-          </Link>
-        </div>
+        {/* Center Navigation: Only displayed outside landing page (on landing, funnel directs straight to Get Started) */}
+        {!isLandingPage && (
+          <div className="hidden md:flex items-center p-1 rounded-xl bg-muted/40 border border-border/60 text-xs">
+            <Link
+              href="/feed"
+              className="px-3.5 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+            >
+              For You
+            </Link>
+            <Link
+              href="/events"
+              className="px-3.5 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+            >
+              Events
+            </Link>
+            <Link
+              href="/people"
+              className="px-3.5 py-1.5 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all"
+            >
+              People
+            </Link>
+          </div>
+        )}
 
         {/* Right 32px Action Group */}
         <div className="flex items-center gap-2">

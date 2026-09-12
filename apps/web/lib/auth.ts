@@ -18,6 +18,7 @@ import { apiFetch } from './api';
 export interface UserProfile {
   id: string;
   name: string;
+  username: string | null;
   email: string;
   image: string | null;
   bio: string | null;
@@ -32,6 +33,7 @@ export interface UserSession {
     id: string;
     email: string;
     name: string;
+    username?: string | null;
     image?: string | null;
   };
   session: {
@@ -59,12 +61,16 @@ export const authClient = {
   },
 
   /**
-   * Register a new student account.
+   * Register a new student account with optional handle.
    */
-  async signUp(email: string, password: string, name: string) {
+  async signUp(email: string, password: string, name: string, username?: string) {
+    const body: Record<string, string> = { email, password, name };
+    if (username && username.trim()) {
+      body.username = username.replace(/^@/, '').toLowerCase().trim();
+    }
     return apiFetch<{ user: any; session: any }>('/api/auth/sign-up/email', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify(body),
     });
   },
 
@@ -170,6 +176,30 @@ export const authClient = {
     return apiFetch('/users/me/preferences', {
       method: 'PATCH',
       body: JSON.stringify({ interestIds }),
+    });
+  },
+
+  /**
+   * Check if a campus handle is available in real-time.
+   */
+  async checkUsername(username: string): Promise<{
+    available: boolean;
+    username: string;
+    error?: string;
+    suggestions?: string[];
+  }> {
+    return apiFetch(`/users/check-username?username=${encodeURIComponent(username)}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Claim or update student campus handle.
+   */
+  async updateUsername(username: string): Promise<UserProfile> {
+    return apiFetch<UserProfile>('/users/me/username', {
+      method: 'PATCH',
+      body: JSON.stringify({ username }),
     });
   },
 

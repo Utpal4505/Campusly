@@ -40,6 +40,14 @@ export class UsersController {
   }
 
   /**
+   * GET /users/check-username — check if a campus handle is available in real-time
+   */
+  @Get('check-username')
+  async checkUsername(@Query('username') username: string) {
+    return this.usersService.checkUsername(username);
+  }
+
+  /**
    * GET /users/:id — public details of a specific student by ID or slug
    */
   @Get(':id')
@@ -70,5 +78,21 @@ export class UsersController {
       user.id,
       parseResult.data.interestIds,
     );
+  }
+
+  /**
+   * PATCH /users/me/username — update or claim student campus handle
+   */
+  @Patch('me/username')
+  @UseGuards(AuthGuard)
+  async updateUsername(
+    @Req() req: Request,
+    @Body('username') username: string,
+  ) {
+    const user = (req as any).user;
+    if (!username || typeof username !== 'string') {
+      throw new BadRequestException('Username is required');
+    }
+    return this.usersService.updateUsername(user.id, username);
   }
 }

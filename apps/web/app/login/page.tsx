@@ -36,6 +36,11 @@ function LoginPageContent() {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [step, setStep] = useState<"credentials" | "otp">("credentials");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const [usernameSuggestions, setUsernameSuggestions] = useState<string[]>([]);
+  const [hasManuallyEditedUsername, setHasManuallyEditedUsername] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -44,6 +49,71 @@ function LoginPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Auto-suggest handle from name if not manually edited
+  useEffect(() => {
+    if (mode === "register" && !hasManuallyEditedUsername && name.trim()) {
+      const clean = name
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/(^_|_$)+/g, "")
+        .slice(0, 18);
+      if (clean.length >= 3) {
+        setUsername(clean);
+      }
+    }
+  }, [name, mode, hasManuallyEditedUsername]);
+
+  // Debounced live username availability check
+  useEffect(() => {
+    if (mode !== "register" || !username.trim()) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      setUsernameSuggestions([]);
+      return;
+    }
+
+    const clean = username.replace(/^@/, "").toLowerCase().trim();
+    if (clean.length < 3) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Handle must be at least 3 characters");
+      setUsernameSuggestions([]);
+      return;
+    }
+    if (clean.length > 20) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Handle cannot exceed 20 characters");
+      setUsernameSuggestions([]);
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(clean)) {
+      setUsernameStatus("invalid");
+      setUsernameMessage("Only letters, numbers & _ allowed");
+      setUsernameSuggestions([]);
+      return;
+    }
+
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await authClient.checkUsername(clean);
+        if (res.available) {
+          setUsernameStatus("available");
+          setUsernameMessage("Available");
+          setUsernameSuggestions([]);
+        } else {
+          setUsernameStatus("taken");
+          setUsernameMessage(res.error || "Already taken");
+          setUsernameSuggestions(res.suggestions || []);
+        }
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [username, mode]);
 
   // Check URL query parameters for ?mode=register
   useEffect(() => {
@@ -71,8 +141,16 @@ function LoginPageContent() {
 
     try {
       if (mode === "register") {
+        if (username.trim()) {
+          const check = await authClient.checkUsername(username.trim());
+          if (!check.available) {
+            setError(check.error || "Please choose an available campus handle.");
+            setIsLoading(false);
+            return;
+          }
+        }
         const studentName = name.trim() || email.split("@")[0] || "Student";
-        await authClient.signUp(email, password, studentName);
+        await authClient.signUp(email, password, studentName, username.trim() || undefined);
         try {
           await authClient.sendVerificationOTP(email);
         } catch (otpErr) {
@@ -417,6 +495,87 @@ function LoginPageContent() {
                         className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
                       />
                     </div>
+                  </div>
+                )}
+
+                {/* Campus Handle Field (Register Mode Only) */}
+                {mode === "register" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-foreground">
+                        Campus Handle <span className="text-primary">*</span>
+                      </label>
+                      {usernameStatus === "checking" && (
+                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                          <span>Checking...</span>
+                        </span>
+                      )}
+                      {usernameStatus === "available" && (
+                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          <span>Available</span>
+                        </span>
+                      )}
+                      {usernameStatus === "taken" && (
+                        <span className="text-[11px] font-semibold text-rose-500 flex items-center gap-1 animate-in fade-in">
+                          <AlertCircle className="w-3 h-3 text-rose-500" />
+                          <span>Already taken</span>
+                        </span>
+                      )}
+                      {usernameStatus === "invalid" && usernameMessage && (
+                        <span className="text-[11px] text-amber-500 font-medium animate-in fade-in">
+                          {usernameMessage}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs font-bold text-muted-foreground select-none">
+                        @
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={username}
+                        onChange={(e) => {
+                          setHasManuallyEditedUsername(true);
+                          const val = e.target.value.replace(/^@/, "").toLowerCase().replace(/[^a-z0-9_]/g, "");
+                          setUsername(val);
+                        }}
+                        placeholder="your_handle"
+                        className={`w-full h-11 pl-8 pr-9 text-xs sm:text-sm font-mono bg-muted/40 rounded-xl border transition-all text-foreground placeholder:text-muted-foreground/60 ${
+                          usernameStatus === "available"
+                            ? "border-emerald-500/60 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
+                            : usernameStatus === "taken"
+                            ? "border-rose-500/60 focus:border-rose-500 focus:ring-1 focus:ring-rose-500/20"
+                            : "border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20"
+                        }`}
+                      />
+                      {usernameStatus === "available" && (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      )}
+                      {usernameStatus === "taken" && (
+                        <AlertCircle className="w-4 h-4 text-rose-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      )}
+                    </div>
+                    {usernameSuggestions.length > 0 && (
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap text-[11px] text-muted-foreground animate-in fade-in">
+                        <span>Try:</span>
+                        {usernameSuggestions.map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => {
+                              setHasManuallyEditedUsername(true);
+                              setUsername(sug);
+                            }}
+                            className="px-1.5 py-0.5 rounded-md bg-muted hover:bg-card border border-border text-foreground font-mono transition-colors cursor-pointer"
+                          >
+                            @{sug}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 

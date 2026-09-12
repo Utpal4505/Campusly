@@ -253,4 +253,130 @@ export class UsersService {
       })),
     };
   }
+
+  /**
+   * Check if a requested username handle is available.
+   */
+  async checkUsername(rawUsername: string) {
+    const clean = (rawUsername || '').replace(/^@/, '').toLowerCase().trim();
+
+    if (!clean) {
+      return {
+        available: false,
+        username: '',
+        error: 'Please enter a username',
+      };
+    }
+
+    if (clean.length < 3) {
+      return {
+        available: false,
+        username: clean,
+        error: 'Handle must be at least 3 characters',
+      };
+    }
+
+    if (clean.length > 20) {
+      return {
+        available: false,
+        username: clean,
+        error: 'Handle cannot exceed 20 characters',
+      };
+    }
+
+    if (!/^[a-z0-9_]+$/.test(clean)) {
+      return {
+        available: false,
+        username: clean,
+        error: 'Only lowercase letters, numbers, and underscores are allowed',
+      };
+    }
+
+    const RESERVED_HANDLES = new Set([
+      'admin',
+      'administrator',
+      'feed',
+      'events',
+      'clubs',
+      'api',
+      'login',
+      'register',
+      'tickets',
+      'messages',
+      'people',
+      'onboarding',
+      'campusly',
+      'support',
+      'settings',
+      'profile',
+      'user',
+      'users',
+    ]);
+
+    if (RESERVED_HANDLES.has(clean)) {
+      return {
+        available: false,
+        username: clean,
+        error: 'This handle is reserved',
+      };
+    }
+
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        username: {
+          equals: clean,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+
+    if (existing) {
+      const yearSuffix = new Date().getFullYear().toString().slice(-2);
+      return {
+        available: false,
+        username: clean,
+        error: 'Already taken',
+        suggestions: [
+          `${clean}_${Math.floor(10 + Math.random() * 90)}`,
+          `${clean}_lpu`,
+          `${clean}${yearSuffix}`,
+        ],
+      };
+    }
+
+    return {
+      available: true,
+      username: clean,
+      suggestions: [],
+    };
+  }
+
+  /**
+   * Update or claim the authenticated user's campus handle.
+   */
+  async updateUsername(userId: string, rawUsername: string) {
+    const clean = (rawUsername || '').replace(/^@/, '').toLowerCase().trim();
+
+    // If the user already has this handle, return current profile
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    });
+    if (currentUser?.username && currentUser.username.toLowerCase() === clean) {
+      return this.getMe(userId);
+    }
+
+    const check = await this.checkUsername(rawUsername);
+    if (!check.available) {
+      throw new BadRequestException(check.error || 'Username is not available');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { username: check.username },
+    });
+
+    return this.getMe(userId);
+  }
 }

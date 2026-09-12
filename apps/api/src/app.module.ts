@@ -11,6 +11,7 @@ import { FeedModule } from './feed/feed.module.js';
 import { PostsModule } from './posts/posts.module.js';
 import { PaymentsModule } from './payments/payments.module.js';
 import { TicketsModule } from './tickets/tickets.module.js';
+import { MessagesModule } from './messages/messages.module.js';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TicketsModule } from './tickets/tickets.module.js';
     PostsModule,
     PaymentsModule,
     TicketsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -10,6 +10,8 @@ import type {
   CreateClubInput,
   CreatePostInput,
   TicketItem,
+  ConversationItem,
+  MessageItem,
 } from '@repo/schemas';
 import { apiFetch } from './api';
 
@@ -370,6 +372,47 @@ export const authClient = {
   async getTicket(idOrNumber: string): Promise<TicketItem> {
     return apiFetch<TicketItem>(`/tickets/${idOrNumber}`, {
       method: 'GET',
+    });
+  },
+
+  /**
+   * Fetch all conversations for the authenticated student.
+   */
+  async getConversations(): Promise<ConversationItem[]> {
+    return apiFetch<ConversationItem[]>('/conversations', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Start or fetch existing 1-on-1 conversation with a peer student.
+   */
+  async createConversation(recipientId: string): Promise<ConversationItem> {
+    return apiFetch<ConversationItem>('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ recipientId }),
+    });
+  },
+
+  /**
+   * Fetch message history for a conversation.
+   */
+  async getMessages(conversationId: string): Promise<MessageItem[]> {
+    return apiFetch<MessageItem[]>(`/conversations/${conversationId}/messages`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Send a message in a conversation.
+   */
+  async sendMessage(
+    conversationId: string,
+    content: string,
+  ): Promise<MessageItem> {
+    return apiFetch<MessageItem>(`/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
     });
   },
 };

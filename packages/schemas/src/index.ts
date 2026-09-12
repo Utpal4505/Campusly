@@ -6,3 +6,4 @@ export * from "./club.js";
 export * from "./feed.js";
 export * from "./post.js";
 export * from "./ticket.js";
+export * from "./message.js";

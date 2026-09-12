@@ -4,12 +4,16 @@ import {
   Param,
   Post,
   Req,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { PaymentsService } from './payments.service.js';
 import { AuthService } from '../auth/auth.service.js';
+import { AuthGuard } from '../auth/guards/auth.guard.js';
 
 @Controller('events')
+@UseGuards(AuthGuard)
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
@@ -17,10 +21,12 @@ export class PaymentsController {
   ) {}
 
   /**
-   * Helper to extract authenticated user from Better Auth session headers,
-   * falling back to the seed demo organizer user if unauthenticated.
+   * Helper to extract authenticated user from Better Auth session headers.
    */
   private async getUserIdFromRequest(req: Request): Promise<string> {
+    const user = (req as any).user;
+    if (user?.id) return user.id;
+
     const headers = new Headers();
     for (const [key, value] of Object.entries(req.headers)) {
       if (value) {
@@ -35,7 +41,12 @@ export class PaymentsController {
     }
 
     const session = await this.authService.getSession(headers);
-    return session?.user?.id || 'seed-organizer-user';
+    if (!session?.user?.id) {
+      throw new UnauthorizedException(
+        'You must be logged in to register for events or purchase tickets',
+      );
+    }
+    return session.user.id;
   }
 
   /**

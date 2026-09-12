@@ -4,10 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { TicketsService } from '../tickets/tickets.service.js';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ticketsService: TicketsService,
+  ) {}
 
   /**
    * Return all upcoming campus events with creators, tagged interests, and registration counts.
@@ -178,7 +182,14 @@ export class EventsService {
     });
 
     if (existing) {
-      throw new ConflictException('You are already registered for this event');
+      const ticket = await this.ticketsService.mintTicketForRegistration(existing.id);
+      return {
+        message: 'Already registered for event. Ticket confirmed!',
+        eventId: event.id,
+        eventTitle: event.title,
+        registeredAt: existing.createdAt,
+        ticket,
+      };
     }
 
     // Create registration
@@ -186,14 +197,19 @@ export class EventsService {
       data: {
         userId,
         eventId,
+        paymentStatus: 'FREE',
+        amount: 0,
       },
     });
 
+    const ticket = await this.ticketsService.mintTicketForRegistration(registration.id);
+
     return {
-      message: 'Successfully registered for event',
+      message: 'Successfully registered for event. Ticket issued!',
       eventId: event.id,
       eventTitle: event.title,
       registeredAt: registration.createdAt,
+      ticket,
     };
   }
 

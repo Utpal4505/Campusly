@@ -41,7 +41,14 @@ export class PaymentsService {
       existing &&
       (existing.paymentStatus === 'PAID' || existing.paymentStatus === 'FREE')
     ) {
-      throw new ConflictException('You are already registered for this event');
+      const ticket = await this.ticketsService.mintTicketForRegistration(existing.id);
+      return {
+        isFree: existing.paymentStatus === 'FREE',
+        registered: true,
+        message: 'You are already registered for this event. Ticket confirmed!',
+        registration: existing,
+        ticket,
+      };
     }
 
     // Free event handling

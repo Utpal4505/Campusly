@@ -33,7 +33,20 @@ export class TicketsService {
     }
 
     if (registration.ticket) {
-      return registration.ticket;
+      const fullTicket = await this.prisma.ticket.findUnique({
+        where: { id: registration.ticket.id },
+        include: {
+          event: {
+            include: {
+              creator: true,
+              interests: { include: { interest: true } },
+            },
+          },
+          registration: true,
+          user: true,
+        },
+      });
+      return fullTicket || registration.ticket;
     }
 
     // Generate unique serial, e.g. CPLY-7F3K92
@@ -86,8 +99,25 @@ export class TicketsService {
 
   /**
    * Find all tickets belonging to an authenticated user.
+   * Auto-mints tickets for any existing event registrations that don't have a ticket yet.
    */
   async findAllForUser(userId: string) {
+    // Auto-heal / auto-mint any registrations for this user that don't have a ticket yet
+    const unmintedRegistrations = await this.prisma.eventRegistration.findMany({
+      where: {
+        userId,
+        ticket: null,
+      },
+    });
+
+    for (const reg of unmintedRegistrations) {
+      try {
+        await this.mintTicketForRegistration(reg.id);
+      } catch (err) {
+        console.error(`Failed to auto-mint ticket for registration ${reg.id}:`, err);
+      }
+    }
+
     const tickets = await this.prisma.ticket.findMany({
       where: { userId },
       include: {
@@ -114,7 +144,7 @@ export class TicketsService {
    * Find a specific ticket for an authenticated user with owner-only access guard.
    */
   async findOneForUser(ticketIdOrNumber: string, userId: string) {
-    const ticket = await this.prisma.ticket.findFirst({
+    let ticket = await this.prisma.ticket.findFirst({
       where: {
         OR: [{ id: ticketIdOrNumber }, { ticketNumber: ticketIdOrNumber }],
       },
@@ -131,6 +161,29 @@ export class TicketsService {
     });
 
     if (!ticket) {
+      // Check if user has an eventRegistration for this event ID / slug
+      const event = await this.prisma.event.findFirst({
+        where: {
+          OR: [
+            { id: ticketIdOrNumber },
+            { title: { equals: ticketIdOrNumber, mode: 'insensitive' } },
+          ],
+        },
+      });
+      if (event) {
+        const reg = await this.prisma.eventRegistration.findUnique({
+          where: {
+            userId_eventId: {
+              userId,
+              eventId: event.id,
+            },
+          },
+        });
+        if (reg) {
+          const minted = await this.mintTicketForRegistration(reg.id);
+          return this.formatTicket(minted);
+        }
+      }
       throw new NotFoundException('Ticket not found');
     }
 

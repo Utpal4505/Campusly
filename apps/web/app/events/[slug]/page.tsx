@@ -77,6 +77,31 @@ export default function EventDetailPage() {
         if (isMounted) setIsLoading(false);
       });
 
+    // Check if the current user already has a ticket for this event
+    authClient
+      .getTickets()
+      .then((tickets) => {
+        if (!isMounted || !Array.isArray(tickets)) return;
+        const matchingTicket = tickets.find(
+          (t) =>
+            t.eventId === rawSlug ||
+            t.event?.id === rawSlug ||
+            t.event?.title?.toLowerCase() === rawSlug.toLowerCase() ||
+            t.event?.title
+              ?.toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .includes(rawSlug.toLowerCase())
+        );
+        if (matchingTicket) {
+          setIsRegistered(true);
+          setTicketId(matchingTicket.id);
+          setPaymentReceipt(matchingTicket.ticketNumber);
+        }
+      })
+      .catch(() => {
+        // Guest or unauthenticated, ignore silently
+      });
+
     return () => {
       isMounted = false;
     };
@@ -150,10 +175,14 @@ export default function EventDetailPage() {
     try {
       const order = await authClient.createPaymentOrder(event.id);
 
-      // If free event, registration was confirmed directly
+      // If free event or already registered, registration was confirmed directly
       if (order.isFree || order.registered) {
         setIsRegistered(true);
-        setPaymentReceipt(`FREE-${Date.now().toString().slice(-6)}`);
+        if (order.ticket?.ticketNumber) {
+          setPaymentReceipt(order.ticket.ticketNumber);
+        } else {
+          setPaymentReceipt(`FREE-${Date.now().toString().slice(-6)}`);
+        }
         if (order.ticket?.id) {
           setTicketId(order.ticket.id);
         }
@@ -230,6 +259,20 @@ export default function EventDetailPage() {
       }
       if (errMsg.includes("already registered") || err?.status === 409) {
         setIsRegistered(true);
+        try {
+          const myTickets = await authClient.getTickets();
+          const existingTicket = myTickets.find(
+            (t) =>
+              t.eventId === event.id ||
+              t.event?.id === event.id ||
+              t.event?.title?.toLowerCase() === event.title.toLowerCase()
+          );
+          if (existingTicket) {
+            setTicketId(existingTicket.id);
+            setPaymentReceipt(existingTicket.ticketNumber);
+          }
+        } catch {}
+        setIsRegistering(false);
         return;
       }
       setRegisterError(errMsg || "Registration failed. Please try again.");

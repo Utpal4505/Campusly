@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
+import { authClient } from "@/lib/auth";
+import type { EventDetail } from "@repo/schemas";
 import { getEventBySlug } from "@/lib/events-data";
 import { getAnimeAvatar } from "@/lib/avatars";
 import {
@@ -26,23 +28,123 @@ import {
   ExternalLink,
   ChevronRight,
   Info,
+  Loader2,
 } from "lucide-react";
 
 export default function EventDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const rawSlug = (params?.slug as string) || "genai-hackathon";
-  const event = getEventBySlug(rawSlug);
+  const rawSlug = (params?.slug as string) || "campus-hackathon-2026";
+  const fallback = getEventBySlug(rawSlug);
 
+  const [liveEvent, setLiveEvent] = useState<EventDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    authClient
+      .getEvent(rawSlug)
+      .then((data) => {
+        if (isMounted) {
+          setLiveEvent(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch live event, using fallback:", err);
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawSlug]);
+
+  const formattedDate = liveEvent?.date
+    ? new Date(liveEvent.date).toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : fallback.date;
+
+  const formattedTime = liveEvent?.date
+    ? new Date(liveEvent.date).toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : fallback.time;
+
+  const event = {
+    id: liveEvent?.id || fallback.id,
+    slug: rawSlug,
+    title: liveEvent?.title || fallback.title,
+    subtitle: liveEvent?.description || fallback.subtitle,
+    category: (liveEvent?.interests?.[0]?.name as any) || fallback.category,
+    categoryBadge: fallback.categoryBadge,
+    date: formattedDate,
+    time: formattedTime,
+    monthDay: fallback.monthDay,
+    venue: liveEvent?.location || fallback.venue,
+    venueLandmark: fallback.venueLandmark,
+    venueDirections: fallback.venueDirections,
+    host: liveEvent?.creator?.name || fallback.host,
+    hostSlug: fallback.hostSlug,
+    entryFee: fallback.entryFee,
+    isFree: fallback.isFree,
+    prizePool: fallback.prizePool,
+    spotsTotal: 120,
+    spotsRemaining: liveEvent
+      ? Math.max(8, 120 - liveEvent.registrationCount)
+      : fallback.spotsRemaining,
+    registrationDeadline: fallback.registrationDeadline,
+    gradient: fallback.gradient,
+    accentColor: fallback.accentColor,
+    about: liveEvent?.description || fallback.about,
+    whatToExpect: fallback.whatToExpect,
+    schedule: fallback.schedule,
+    rules: fallback.rules,
+    tags: liveEvent?.interests?.map((i: any) => i.name) || fallback.tags,
+    mentors: fallback.mentors,
+  };
 
   const handleShare = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  const handleRegister = async () => {
+    setIsRegistering(true);
+    setRegisterError(null);
+    try {
+      await authClient.registerEvent(event.id);
+      setIsRegistered(true);
+    } catch (err: any) {
+      const errMsg = err?.message || String(err);
+      if (
+        errMsg.includes("401") ||
+        err?.status === 401 ||
+        errMsg.toLowerCase().includes("authenticated")
+      ) {
+        router.push(`/login?redirect=${encodeURIComponent(`/events/${rawSlug}`)}`);
+        return;
+      }
+      if (errMsg.includes("already registered") || err?.status === 409) {
+        setIsRegistered(true);
+        return;
+      }
+      setRegisterError(errMsg || "Registration failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -379,12 +481,23 @@ export default function EventDetailPage() {
 
                   <Button
                     size="lg"
-                    onClick={() => setIsRegistered(true)}
-                    className="w-full rounded-xl text-xs font-bold shadow-xs gap-2 cursor-pointer h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={isRegistering}
+                    onClick={handleRegister}
+                    className="w-full rounded-xl text-xs font-bold shadow-xs gap-2 cursor-pointer h-11 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-70"
                   >
-                    <Ticket className="w-4 h-4" />
-                    <span>Register Now ({event.entryFee})</span>
+                    {isRegistering ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Ticket className="w-4 h-4" />
+                    )}
+                    <span>{isRegistering ? "Registering..." : `Register Now (${event.entryFee})`}</span>
                   </Button>
+
+                  {registerError && (
+                    <p className="text-xs text-red-500 font-medium text-center bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                      {registerError}
+                    </p>
+                  )}
 
                   <div className="text-[11px] text-center text-muted-foreground flex items-center justify-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />

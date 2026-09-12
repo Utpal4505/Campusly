@@ -55,30 +55,10 @@ export class ClubsService {
   }
 
   /**
-   * Return full details of a specific club by ID.
+   * Return full details of a specific club by ID or slug.
    */
   async findOne(id: string) {
-    const club = await this.prisma.club.findUnique({
-      where: { id },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        interests: {
-          include: {
-            interest: true,
-          },
-        },
-        _count: {
-          select: {
-            members: true,
-          },
-        },
-      },
-    });
+    const club = await this.findClubRecord(id);
 
     if (!club) {
       throw new NotFoundException('Club not found');
@@ -102,18 +82,79 @@ export class ClubsService {
   }
 
   /**
+   * Helper to find a club record by exact ID, lowercase ID, or slugified name.
+   */
+  private async findClubRecord(idOrSlug: string) {
+    const direct = await this.prisma.club.findUnique({
+      where: { id: idOrSlug },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        interests: {
+          include: {
+            interest: true,
+          },
+        },
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+    });
+
+    if (direct) return direct;
+
+    const allClubs = await this.prisma.club.findMany({
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        interests: {
+          include: {
+            interest: true,
+          },
+        },
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+    });
+
+    const target = idOrSlug.toLowerCase().trim();
+    return (
+      allClubs.find((c) => {
+        if (c.id.toLowerCase() === target) return true;
+        const slug = c.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+        return slug === target || slug.includes(target) || target.includes(slug);
+      }) || null
+    );
+  }
+
+  /**
    * Join a club as a member.
    */
-  async join(clubId: string, userId: string) {
+  async join(idOrSlug: string, userId: string) {
     // Verify the club exists
-    const club = await this.prisma.club.findUnique({
-      where: { id: clubId },
-      select: { id: true, name: true },
-    });
+    const club = await this.findClubRecord(idOrSlug);
 
     if (!club) {
       throw new NotFoundException('Club not found');
     }
+
+    const clubId = club.id;
 
     // Check for existing membership
     const existing = await this.prisma.clubMember.findUnique({

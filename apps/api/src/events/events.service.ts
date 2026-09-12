@@ -57,31 +57,10 @@ export class EventsService {
   }
 
   /**
-   * Return details of a specific event by ID.
+   * Return details of a specific event by ID or slug.
    */
   async findOne(id: string) {
-    const event = await this.prisma.event.findUnique({
-      where: { id },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            department: true,
-          },
-        },
-        interests: {
-          include: {
-            interest: true,
-          },
-        },
-        _count: {
-          select: {
-            registrations: true,
-          },
-        },
-      },
-    });
+    const event = await this.findEventRecord(id);
 
     if (!event) {
       throw new NotFoundException('Event not found');
@@ -108,18 +87,81 @@ export class EventsService {
   }
 
   /**
+   * Helper to find an event by exact ID, lowercased ID, or slugified title.
+   */
+  private async findEventRecord(idOrSlug: string) {
+    const direct = await this.prisma.event.findUnique({
+      where: { id: idOrSlug },
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            department: true,
+          },
+        },
+        interests: {
+          include: {
+            interest: true,
+          },
+        },
+        _count: {
+          select: {
+            registrations: true,
+          },
+        },
+      },
+    });
+
+    if (direct) return direct;
+
+    const allEvents = await this.prisma.event.findMany({
+      include: {
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            department: true,
+          },
+        },
+        interests: {
+          include: {
+            interest: true,
+          },
+        },
+        _count: {
+          select: {
+            registrations: true,
+          },
+        },
+      },
+    });
+
+    const target = idOrSlug.toLowerCase().trim();
+    return (
+      allEvents.find((e) => {
+        if (e.id.toLowerCase() === target) return true;
+        const slug = e.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+        return slug === target || slug.includes(target) || target.includes(slug);
+      }) || null
+    );
+  }
+
+  /**
    * Register the authenticated user for an event.
    */
-  async register(eventId: string, userId: string) {
+  async register(idOrSlug: string, userId: string) {
     // Verify the event exists
-    const event = await this.prisma.event.findUnique({
-      where: { id: eventId },
-      select: { id: true, title: true },
-    });
+    const event = await this.findEventRecord(idOrSlug);
 
     if (!event) {
       throw new NotFoundException('Event not found');
     }
+
+    const eventId = event.id;
 
     // Check for existing registration
     const existing = await this.prisma.eventRegistration.findUnique({

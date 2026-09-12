@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
-import { LPU_EVENTS_LIST, CampusEvent } from "@/lib/events-data";
+import { authClient } from "@/lib/auth";
+import type { EventCard as BackendEventCard } from "@repo/schemas";
 import {
   Calendar,
   MapPin,
@@ -17,6 +18,7 @@ import {
   Users,
   Zap,
   Ticket,
+  Loader2,
 } from "lucide-react";
 
 const ACCENT_STYLES: Record<string, {
@@ -51,15 +53,107 @@ const ACCENT_STYLES: Record<string, {
   },
 };
 
+const ACCENT_KEYS = ["blue", "emerald", "purple", "amber", "rose"];
+
+interface DisplayEvent {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  venue: string;
+  host: string;
+  date: string;
+  monthDay: { month: string; day: string };
+  time: string;
+  tags: string[];
+  spotsRemaining: number;
+  prizePool: string;
+  isFree: boolean;
+  entryFee: string;
+  category: string;
+  accentColor: string;
+}
+
 export default function EventsDirectoryPage() {
+  const [events, setEvents] = useState<DisplayEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const categories = ["All", "Hackathon", "Robotics", "Design", "Fest & Culture"];
+  useEffect(() => {
+    let isMounted = true;
+    authClient
+      .getEvents()
+      .then((rawEvents) => {
+        if (!isMounted) return;
+        const mapped: DisplayEvent[] = rawEvents.map((event, index) => {
+          const eventDate = new Date(event.date);
+          const month = eventDate
+            .toLocaleDateString("en-US", { month: "short" })
+            .toUpperCase();
+          const day = String(eventDate.getDate());
+          const dateStr = eventDate.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          });
+          const timeStr = eventDate.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          const isHackathon = event.title.toLowerCase().includes("hackathon");
+          const isEsports = event.title.toLowerCase().includes("esports");
+          const prize = isHackathon ? "₹50,000" : isEsports ? "₹40,000" : "Free Entry";
 
-  const filteredEvents = LPU_EVENTS_LIST.filter((event) => {
+          return {
+            id: event.id,
+            slug: event.id,
+            title: event.title,
+            subtitle: event.description || "Official campus student event.",
+            venue: event.location || "LPU Campus",
+            host: event.creator?.name || "Campus Event Board",
+            date: dateStr,
+            monthDay: { month, day },
+            time: timeStr,
+            tags: event.interests.map((i) => i.name),
+            spotsRemaining: Math.max(12, 120 - event.registrationCount),
+            prizePool: prize,
+            isFree: true,
+            entryFee: "Free Pass",
+            category: event.interests[0]?.name || "Campus Event",
+            accentColor: ACCENT_KEYS[index % ACCENT_KEYS.length] || "blue",
+          };
+        });
+        setEvents(mapped);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch events from API:", err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const categories = [
+    "All",
+    "Artificial Intelligence",
+    "Web Development",
+    "Design",
+    "Gaming",
+    "Competitive Programming",
+    "Cybersecurity",
+    "Music",
+  ];
+
+  const filteredEvents = events.filter((event) => {
     const matchesCategory =
-      selectedCategory === "All" || event.category === selectedCategory;
+      selectedCategory === "All" ||
+      event.category === selectedCategory ||
+      event.tags.includes(selectedCategory);
     const query = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !query ||
@@ -134,7 +228,16 @@ export default function EventsDirectoryPage() {
         </div>
 
         {/* Events Grid (Calibrated for Light & Dark Mode) */}
-        {filteredEvents.length === 0 ? (
+        {isLoading ? (
+          <div className="py-24 text-center">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="text-xs text-muted-foreground font-medium">
+                Loading campus events from database...
+              </span>
+            </div>
+          </div>
+        ) : filteredEvents.length === 0 ? (
           <div className="p-12 text-center rounded-3xl border border-dashed border-border/80 bg-card/40 my-8">
             <p className="text-sm font-semibold text-foreground mb-1">No campus events match your search</p>
             <p className="text-xs text-muted-foreground mb-4">Try selecting "All" or clearing the search query.</p>

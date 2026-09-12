@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
+import { authClient } from "@/lib/auth";
+import type { ClubDetail } from "@repo/schemas";
 import {
   ArrowLeft,
   Heart,
@@ -32,6 +34,7 @@ import {
   HelpCircle,
   Copy,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 
 interface LeadershipMember {
@@ -360,6 +363,7 @@ const CLUB_ID_ALIASES: Record<string, string> = {
 };
 
 export default function ClubDetailPage() {
+  const router = useRouter();
   const params = useParams();
   const rawSlug = (params?.slug as string) || "ai-robotics-society";
   const slug = rawSlug.toLowerCase();
@@ -367,7 +371,38 @@ export default function ClubDetailPage() {
 
   const { userName } = useCampusStore();
 
-  const club: ClubData =
+  const [liveClub, setLiveClub] = useState<ClubDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [isJoined, setIsJoined] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [calendarAdded, setCalendarAdded] = useState(false);
+  const [discordJoined, setDiscordJoined] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    authClient
+      .getClub(rawSlug)
+      .then((data) => {
+        if (isMounted) {
+          setLiveClub(data);
+          setIsLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch live club, using fallback:", err);
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawSlug]);
+
+  const fallbackClub: ClubData =
     clubsData[resolvedKey] ||
     clubsData[slug] || {
     name: rawSlug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
@@ -447,13 +482,18 @@ export default function ClubDetailPage() {
     },
   };
 
-  // State
-  const [isSaved, setIsSaved] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
-  const [isJoined, setIsJoined] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
-  const [calendarAdded, setCalendarAdded] = useState(false);
-  const [discordJoined, setDiscordJoined] = useState(false);
+  const club: ClubData & { id: string } = {
+    ...fallbackClub,
+    id: liveClub?.id || rawSlug,
+    name: liveClub?.name || fallbackClub.name,
+    about: liveClub?.description || fallbackClub.about,
+    tagline: liveClub?.description || fallbackClub.tagline,
+    category:
+      liveClub?.interests && liveClub.interests.length > 0
+        ? liveClub.interests.map((i) => i.name).join(" · ")
+        : fallbackClub.category,
+    membersCount: liveClub ? liveClub.memberCount : fallbackClub.membersCount,
+  };
 
   // Application form fields
   const [selectedDomain, setSelectedDomain] = useState(club.domainTracks[0]?.id || "general");
@@ -472,10 +512,33 @@ export default function ClubDetailPage() {
     }
   };
 
-  const handleApply = (e: React.FormEvent) => {
+  const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsApplying(false);
-    setIsJoined(true);
+    setIsJoining(true);
+    setJoinError(null);
+    try {
+      await authClient.joinClub(club.id);
+      setIsApplying(false);
+      setIsJoined(true);
+    } catch (err: any) {
+      const errMsg = err?.message || String(err);
+      if (
+        errMsg.includes("401") ||
+        err?.status === 401 ||
+        errMsg.toLowerCase().includes("authenticated")
+      ) {
+        router.push(`/login?redirect=${encodeURIComponent(`/clubs/${rawSlug}`)}`);
+        return;
+      }
+      if (errMsg.includes("already a member") || err?.status === 409) {
+        setIsApplying(false);
+        setIsJoined(true);
+        return;
+      }
+      setJoinError(errMsg || "Failed to join club. Please try again.");
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   return (
@@ -1301,6 +1364,13 @@ export default function ClubDetailPage() {
                   />
                 </div>
 
+                {/* Error notice if join fails */}
+                {joinError && (
+                  <p className="text-xs text-red-500 font-medium text-center bg-red-500/10 p-2 rounded-xl border border-red-500/20">
+                    {joinError}
+                  </p>
+                )}
+
                 {/* Form Actions */}
                 <div className="flex items-center justify-between pt-3 border-t border-border/60">
                   <div className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -1321,10 +1391,15 @@ export default function ClubDetailPage() {
                     <Button
                       type="submit"
                       size="sm"
-                      className="rounded-xl px-5 text-xs font-bold shadow-xs gap-1.5 cursor-pointer"
+                      disabled={isJoining}
+                      className="rounded-xl px-5 text-xs font-bold shadow-xs gap-1.5 cursor-pointer disabled:opacity-70"
                     >
-                      <span>Submit Application</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      {isJoining ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      )}
+                      <span>{isJoining ? "Joining..." : "Submit Application"}</span>
                     </Button>
                   </div>
                 </div>

@@ -1,4 +1,10 @@
-import type { FeedResponse } from '@repo/schemas';
+import type {
+  FeedResponse,
+  EventCard,
+  EventDetail,
+  ClubCard,
+  ClubDetail,
+} from '@repo/schemas';
 import { apiFetch } from './api';
 
 export interface UserProfile {
@@ -133,6 +139,71 @@ export const authClient = {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     return apiFetch<FeedResponse>(`/feed${queryString}`, {
       method: 'GET',
+    });
+  },
+
+  /**
+   * Fetch all upcoming campus events from PostgreSQL.
+   */
+  async getEvents(): Promise<EventCard[]> {
+    return apiFetch<EventCard[]>('/events', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Fetch single event details by ID or slug.
+   */
+  async getEvent(id: string): Promise<EventDetail> {
+    return apiFetch<EventDetail>(`/events/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Register active student for a campus event.
+   */
+  async registerEvent(id: string): Promise<{
+    message: string;
+    eventId: string;
+    eventTitle: string;
+    registeredAt: string;
+  }> {
+    return apiFetch(`/events/${id}/register`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Fetch all active campus clubs from PostgreSQL.
+   */
+  async getClubs(): Promise<ClubCard[]> {
+    return apiFetch<ClubCard[]>('/clubs', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Fetch single club details by ID or slug.
+   */
+  async getClub(id: string): Promise<ClubDetail> {
+    return apiFetch<ClubDetail>(`/clubs/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Join a student club organization.
+   */
+  async joinClub(id: string): Promise<{
+    message: string;
+    clubId: string;
+    clubName: string;
+    role: string;
+    joinedAt: string;
+  }> {
+    return apiFetch(`/clubs/${id}/join`, {
+      method: 'POST',
     });
   },
 };

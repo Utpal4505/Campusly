@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCampusStore } from "@/lib/store";
@@ -27,8 +27,10 @@ import {
   Loader2,
 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/feed";
   const { setUserName, setInterests } = useCampusStore();
 
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -86,13 +88,11 @@ export default function LoginPage() {
           if (profile?.name) setUserName(profile.name);
           if (profile?.interests && profile.interests.length > 0) {
             setInterests(profile.interests.map((i) => i.name));
-            router.push("/feed");
-            return;
           }
         } catch {
           setUserName(email.split("@")[0] || "Student");
         }
-        router.push("/feed");
+        router.push(redirectUrl);
       }
     } catch (err: any) {
       setError(
@@ -118,7 +118,11 @@ export default function LoginPage() {
       await authClient.verifyEmailOTP(email, otp.trim());
       const studentName = name.trim() || email.split("@")[0] || "Student";
       setUserName(studentName);
-      router.push("/onboarding");
+      if (redirectUrl && redirectUrl !== "/feed") {
+        router.push(redirectUrl);
+      } else {
+        router.push("/onboarding");
+      }
     } catch (err: any) {
       setError(
         err?.message ||
@@ -148,7 +152,7 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     try {
-      await authClient.signInSocial("google");
+      await authClient.signInSocial("google", redirectUrl);
     } catch (err: any) {
       setError(
         err?.message || "Failed to initiate Google sign-in. Please try again."
@@ -181,11 +185,11 @@ export default function LoginPage() {
       } else {
         setInterests(roleInterests);
       }
-      router.push("/feed");
+      router.push(redirectUrl);
     } catch {
       setUserName(demoName);
       setInterests(roleInterests);
-      router.push("/feed");
+      router.push(redirectUrl);
     } finally {
       setIsLoading(false);
     }
@@ -750,3 +754,18 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+

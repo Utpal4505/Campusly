@@ -3,6 +3,7 @@ import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth-context";
 import GlobalModals from "@/components/GlobalModals";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -26,8 +27,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange={false}
         >
-          {children}
-          <GlobalModals />
+          <AuthProvider>
+            {children}
+            <GlobalModals />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

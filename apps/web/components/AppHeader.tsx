@@ -1,58 +1,62 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
-import { authClient } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
 import {
   Sparkles,
   Users,
   Calendar,
+  Ticket,
   MessageSquare,
   Plus,
   SlidersHorizontal,
+  LogOut,
+  ChevronDown,
+  User,
 } from "lucide-react";
 
 export default function AppHeader() {
   const pathname = usePathname();
+  const { user, isAuthenticated, signOut } = useAuth();
   const {
     userName,
-    setUserName,
-    setInterests,
     setCreateModalOpen,
     setEditInterestsOpen,
   } = useCampusStore();
 
-  useEffect(() => {
-    let isMounted = true;
-    authClient
-      .getMe()
-      .then((profile) => {
-        if (isMounted && profile?.name) {
-          setUserName(profile.name);
-          if (profile.interests && profile.interests.length > 0) {
-            setInterests(profile.interests.map((i) => i.name));
-          }
-        }
-      })
-      .catch(() => {
-        // Unauthenticated or guest session — leave default store state
-      });
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  const displayName = user?.name || userName || "Student";
+  const displayEmail = user?.email || "";
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
     return () => {
-      isMounted = false;
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [setUserName, setInterests]);
+  }, [menuOpen]);
 
   const navLinks = [
     { href: "/feed", label: "For You", icon: Sparkles },
     { href: "/events", label: "Events", icon: Calendar },
+    { href: "/tickets", label: "Tickets", icon: Ticket },
     { href: "/people", label: "People", icon: Users },
-    { href: "/messages/rahul-sharma", label: "Messages", icon: MessageSquare, badge: "1" },
+    { href: "/messages", label: "Messages", icon: MessageSquare, badge: "1" },
   ];
 
   return (
@@ -88,7 +92,7 @@ export default function AppHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-1.5 rounded-lg font-medium transition-all relative flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-all relative flex items-center gap-1.5 ${
                     isActive
                       ? "bg-card text-foreground font-semibold shadow-xs border border-border/80"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -109,48 +113,111 @@ export default function AppHeader() {
           <div className="flex items-center gap-2 shrink-0">
             
             {/* Quick Create Button */}
-            <Button
-              size="sm"
-              onClick={() => setCreateModalOpen(true)}
-              className="h-8 px-3 rounded-lg text-xs font-semibold shadow-xs gap-1.5 cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Post</span>
-            </Button>
+            {isAuthenticated && (
+              <Button
+                size="sm"
+                onClick={() => setCreateModalOpen(true)}
+                className="h-8 px-3 rounded-lg text-xs font-semibold shadow-xs gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Post</span>
+              </Button>
+            )}
 
             {/* Quick Preferences Trigger */}
-            <button
-              type="button"
-              onClick={() => setEditInterestsOpen(true)}
-              className="w-8 h-8 rounded-lg border border-border/60 bg-card hover:bg-muted/60 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer hidden sm:flex"
-              title="Edit personalized feed interests"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-            </button>
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => setEditInterestsOpen(true)}
+                className="w-8 h-8 rounded-lg border border-border/60 bg-card hover:bg-muted/60 text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer hidden sm:flex"
+                title="Edit personalized feed interests"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+              </button>
+            )}
 
             {/* Dark / Light Theme Toggle */}
             <ThemeToggle />
 
             <div className="w-px h-4 bg-border/60 mx-0.5 hidden sm:block" />
 
-            {/* User Profile Pill */}
-            <button
-              type="button"
-              onClick={() => setEditInterestsOpen(true)}
-              className="h-8 pl-1 pr-2.5 rounded-lg border border-border/60 bg-card hover:bg-muted/60 flex items-center gap-2 transition-colors cursor-pointer"
-              title="User Profile & Interests"
-            >
-              <div className="w-6 h-6 rounded-md overflow-hidden border border-border/70 flex items-center justify-center bg-muted/20">
-                <img
-                  src={getAnimeAvatar(userName, "Utpal")}
-                  alt={userName}
-                  className="w-full h-full object-cover"
-                />
+            {/* User Profile / Auth State */}
+            {isAuthenticated ? (
+              <div className="relative" ref={menuRef}>
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen(!menuOpen)}
+                  className="h-8 pl-1 pr-2 rounded-lg border border-border/60 bg-card hover:bg-muted/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="User Account Menu"
+                >
+                  <div className="w-6 h-6 rounded-md overflow-hidden border border-border/70 flex items-center justify-center bg-muted/20">
+                    <img
+                      src={getAnimeAvatar(displayName, "Utpal")}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-foreground hidden sm:inline-block max-w-[90px] truncate">
+                    {displayName}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {menuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 animate-in fade-in-0 zoom-in-95">
+                    <div className="px-2.5 py-2 border-b border-border/60 mb-1">
+                      <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
+                      {displayEmail && (
+                        <p className="text-[11px] text-muted-foreground truncate">{displayEmail}</p>
+                      )}
+                    </div>
+
+                    <Link
+                      href="/tickets"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+                    >
+                      <Ticket className="w-3.5 h-3.5 text-primary" />
+                      <span>My Event Tickets</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setEditInterestsOpen(true);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-muted flex items-center gap-2 transition-colors text-left cursor-pointer"
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Interests & Preferences</span>
+                    </button>
+
+                    <div className="h-px bg-border/60 my-1" />
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMenuOpen(false);
+                        await signOut();
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-destructive hover:bg-destructive/10 flex items-center gap-2 transition-colors text-left cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                )}
               </div>
-              <span className="text-xs font-semibold text-foreground hidden sm:inline-block">
-                {userName}
-              </span>
-            </button>
+            ) : (
+              <Link href="/login">
+                <Button size="sm" variant="outline" className="h-8 px-3 rounded-lg text-xs font-semibold">
+                  Sign In
+                </Button>
+              </Link>
+            )}
+
           </div>
 
         </div>
@@ -186,14 +253,16 @@ export default function AppHeader() {
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={() => setEditInterestsOpen(true)}
-            className="flex flex-col items-center justify-center py-0.5 px-3 rounded-xl text-[11px] font-medium transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            <SlidersHorizontal className="w-4 h-4 mb-0.5" />
-            <span>Preferences</span>
-          </button>
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={() => setEditInterestsOpen(true)}
+              className="flex flex-col items-center justify-center py-0.5 px-3 rounded-xl text-[11px] font-medium transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <SlidersHorizontal className="w-4 h-4 mb-0.5" />
+              <span>Preferences</span>
+            </button>
+          )}
         </nav>
       )}
     </>

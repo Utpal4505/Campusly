@@ -1,7 +1,11 @@
+import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
+
 /**
  * Campusly Email Delivery Helper
- * Integrates directly with Resend HTTP API.
- * Falls back to console simulation when RESEND_API_KEY is not configured.
+ * Primary: Nodemailer with Brevo (formerly Sendinblue) SMTP Relay.
+ * Secondary fallback: Resend HTTP API.
+ * Local fallback: Campusly Dev Email Simulator (console log) when SMTP is not configured.
  */
 
 export interface SendMailOptions {
@@ -11,50 +15,100 @@ export interface SendMailOptions {
   text?: string;
 }
 
-export async function sendMail({ to, subject, html, text }: SendMailOptions) {
-  const apiKey = process.env['RESEND_API_KEY'];
-  const fromEmail = process.env['EMAIL_FROM'] || 'Campusly <onboarding@resend.dev>';
+let cachedTransporter: Transporter | null = null;
 
-  if (!apiKey) {
-    console.log(`\n┌────────────────────────────────────────────────────────┐`);
-    console.log(`│ 📧 [CAMPUSLY DEV EMAIL SIMULATOR]                      │`);
-    console.log(`│ To:      ${to.padEnd(45)} │`);
-    console.log(`│ Subject: ${subject.padEnd(45)} │`);
-    if (text) {
-      console.log(`│ OTP:     ${text.padEnd(45)} │`);
-    }
-    console.log(`└────────────────────────────────────────────────────────┘\n`);
-    return { id: `dev-${Date.now()}`, simulated: true };
+function getBrevoTransporter(): Transporter | null {
+  const user = process.env['BREVO_SMTP_USER'];
+  const pass = process.env['BREVO_SMTP_KEY'] || process.env['BREVO_SMTP_PASSWORD'];
+
+  if (!user || !pass) {
+    return null;
   }
 
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+  if (!cachedTransporter) {
+    const host = process.env['BREVO_SMTP_HOST'] || 'smtp-relay.brevo.com';
+    const port = Number(process.env['BREVO_SMTP_PORT']) || 587;
+    cachedTransporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: {
+        user,
+        pass,
       },
-      body: JSON.stringify({
+    });
+  }
+
+  return cachedTransporter;
+}
+
+export async function sendMail({ to, subject, html, text }: SendMailOptions) {
+  const brevoTransporter = getBrevoTransporter();
+  const fromEmail =
+    process.env['EMAIL_FROM'] ||
+    process.env['BREVO_SMTP_USER'] ||
+    'Campusly <no-reply@campusly.edu>';
+
+  // 1. Primary delivery: Nodemailer with Brevo SMTP
+  if (brevoTransporter) {
+    try {
+      const info = await brevoTransporter.sendMail({
         from: fromEmail,
-        to: [to],
+        to,
         subject,
         html,
-        text,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Resend delivery failed:', errText);
-      return { error: errText };
+        text: text || undefined,
+      });
+      return { id: info.messageId, provider: 'brevo-smtp' };
+    } catch (smtpError) {
+      console.error('Brevo SMTP email delivery failed:', smtpError);
+      return { error: smtpError };
     }
-
-    const data = await res.json();
-    return data;
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return { error };
   }
+
+  // 2. Secondary fallback: Resend API
+  const resendApiKey = process.env['RESEND_API_KEY'];
+  if (resendApiKey) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [to],
+          subject,
+          html,
+          text,
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error('Resend delivery failed:', errText);
+        return { error: errText };
+      }
+
+      const data = await res.json();
+      return { ...data, provider: 'resend' };
+    } catch (error) {
+      console.error('Error sending email via Resend:', error);
+      return { error };
+    }
+  }
+
+  // 3. Zero-block Dev Simulation fallback when credentials are not yet set in .env
+  console.log(`\n┌────────────────────────────────────────────────────────┐`);
+  console.log(`│ 📧 [CAMPUSLY DEV EMAIL SIMULATOR]                      │`);
+  console.log(`│ To:      ${to.padEnd(45)} │`);
+  console.log(`│ Subject: ${subject.padEnd(45)} │`);
+  if (text) {
+    console.log(`│ OTP:     ${text.padEnd(45)} │`);
+  }
+  console.log(`└────────────────────────────────────────────────────────┘\n`);
+  return { id: `dev-${Date.now()}`, simulated: true, provider: 'dev-simulator' };
 }
 
 export function formatOtpEmailHtml(otp: string): string {

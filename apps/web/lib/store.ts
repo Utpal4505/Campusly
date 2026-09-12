@@ -16,6 +16,8 @@ export interface CustomPost {
   actionHref?: string;
 }
 
+export type CreateModalTabType = "teammate" | "project" | "event";
+
 export interface OnboardingState {
   interests: string[];
   interestIds: string[];
@@ -23,6 +25,7 @@ export interface OnboardingState {
   userName: string;
   customPosts: CustomPost[];
   isCreateModalOpen: boolean;
+  createModalTab: CreateModalTabType;
   isEditInterestsOpen: boolean;
   setInterestIds: (ids: string[]) => void;
   setInterests: (interests: string[]) => void;
@@ -33,7 +36,8 @@ export interface OnboardingState {
   toggleGoal: (goal: string) => void;
   setUserName: (name: string) => void;
   addCustomPost: (post: CustomPost) => void;
-  setCreateModalOpen: (open: boolean) => void;
+  setCreateModalOpen: (open: boolean, tab?: CreateModalTabType) => void;
+  setCreateModalTab: (tab: CreateModalTabType) => void;
   setEditInterestsOpen: (open: boolean) => void;
 }
 
@@ -47,6 +51,7 @@ export const useCampusStore = create<OnboardingState>((set) => ({
   userName: "Utpal",
   customPosts: [],
   isCreateModalOpen: false,
+  createModalTab: "teammate",
   isEditInterestsOpen: false,
   setInterestIds: (interestIds) => set({ interestIds }),
   setInterests: (interests) => set({ interests }),
@@ -85,6 +90,11 @@ export const useCampusStore = create<OnboardingState>((set) => ({
     set((state) => ({
       customPosts: [post, ...state.customPosts],
     })),
-  setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
+  setCreateModalOpen: (open, tab) =>
+    set((state) => ({
+      isCreateModalOpen: open,
+      ...(tab ? { createModalTab: tab } : {}),
+    })),
+  setCreateModalTab: (tab) => set({ createModalTab: tab }),
   setEditInterestsOpen: (open) => set({ isEditInterestsOpen: open }),
 }));

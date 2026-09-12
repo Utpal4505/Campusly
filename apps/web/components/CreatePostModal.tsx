@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useCampusStore, CustomPost } from "@/lib/store";
+import { useCampusStore, CustomPost, type CreateModalTabType } from "@/lib/store";
 import { authClient } from "@/lib/auth";
 import {
   X,
@@ -16,14 +16,22 @@ import {
   ShieldCheck,
   Loader2,
   ArrowRight,
+  FolderGit2,
+  ExternalLink,
 } from "lucide-react";
 
 export default function CreatePostModal() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isCreateModalOpen, setCreateModalOpen, addCustomPost, userName } = useCampusStore();
+  const {
+    isCreateModalOpen,
+    setCreateModalOpen,
+    addCustomPost,
+    userName,
+    createModalTab,
+  } = useCampusStore();
 
-  const [postType, setPostType] = useState<"teammate" | "event">("teammate");
+  const [postType, setPostType] = useState<CreateModalTabType>("teammate");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -48,6 +56,12 @@ export default function CreatePostModal() {
   const [pitch, setPitch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>(["AI", "Web Dev"]);
 
+  // Project showcase fields
+  const [showcaseTitle, setShowcaseTitle] = useState("");
+  const [showcaseTagline, setShowcaseTagline] = useState("");
+  const [showcaseLink, setShowcaseLink] = useState("");
+  const [showcaseDesc, setShowcaseDesc] = useState("");
+
   // Event post fields (with Club Host organization)
   const [hostClub, setHostClub] = useState(detectedClubName);
   const [eventTitle, setEventTitle] = useState("");
@@ -55,13 +69,17 @@ export default function CreatePostModal() {
   const [eventVenue, setEventVenue] = useState("");
   const [eventDesc, setEventDesc] = useState("");
 
-  // If opened from a club page, automatically pre-fill host and switch to event tab
+  // Sync modal postType whenever modal opens or tab selection changes
   useEffect(() => {
-    if (clubSlugFromUrl && CLUB_HOST_NAMES[clubSlugFromUrl]) {
-      setHostClub(CLUB_HOST_NAMES[clubSlugFromUrl]);
-      setPostType("event");
+    if (isCreateModalOpen) {
+      if (clubSlugFromUrl && CLUB_HOST_NAMES[clubSlugFromUrl]) {
+        setHostClub(CLUB_HOST_NAMES[clubSlugFromUrl]);
+        setPostType("event");
+      } else {
+        setPostType(createModalTab || "teammate");
+      }
     }
-  }, [clubSlugFromUrl]);
+  }, [isCreateModalOpen, createModalTab, clubSlugFromUrl]);
 
   const tagOptions = ["AI", "Web Dev", "Design", "Startups", "Mobile", "Hackathon", "Open Source"];
 
@@ -104,6 +122,37 @@ export default function CreatePostModal() {
           createdAt: "Just now",
           actionLabel: "Connect & Team Up",
           actionDoneLabel: "Invite Sent ✓",
+        };
+
+        addCustomPost(newPost);
+      } else if (postType === "project") {
+        if (!showcaseTitle.trim() || !showcaseDesc.trim()) {
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Persist to real PostgreSQL Post table
+        await authClient
+          .createPost({
+            title: `🚀 Project: ${showcaseTitle.trim()}`,
+            content: `${showcaseTagline ? `${showcaseTagline}\n\n` : ""}${showcaseDesc.trim()}${showcaseLink ? `\n\nDemo: ${showcaseLink}` : ""}`,
+          })
+          .catch((err) => console.warn("Failed to persist project to DB:", err));
+
+        const newPost: CustomPost = {
+          id: `proj-${Date.now()}`,
+          type: "projects",
+          category: "Project Showcase",
+          title: showcaseTitle,
+          author: userName,
+          avatar: userName.charAt(0).toUpperCase(),
+          meta: `🚀 Built by ${userName}${showcaseTagline ? ` · ${showcaseTagline}` : ""}`,
+          description: showcaseDesc,
+          tags: selectedTags.length > 0 ? selectedTags : ["Project", "Open Source"],
+          createdAt: "Just now",
+          actionLabel: showcaseLink ? "View Project Demo" : "Explore Project",
+          actionDoneLabel: "Saved ✓",
+          actionHref: showcaseLink || undefined,
         };
 
         addCustomPost(newPost);
@@ -157,6 +206,10 @@ export default function CreatePostModal() {
       setProjectTitle("");
       setRoleNeeded("");
       setPitch("");
+      setShowcaseTitle("");
+      setShowcaseTagline("");
+      setShowcaseLink("");
+      setShowcaseDesc("");
       setEventTitle("");
       setEventTiming("");
       setEventVenue("");
@@ -199,8 +252,8 @@ export default function CreatePostModal() {
           </button>
         </div>
 
-        {/* Post Type Selector Tabs (Focused 2-Tab Hierarchy) */}
-        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/50 text-xs mb-2">
+        {/* Post Type Selector Tabs (3 Distinct Tabs: Teammate, Project, Event) */}
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-xl border border-border/50 text-xs mb-3">
           <button
             type="button"
             onClick={() => setPostType("teammate")}
@@ -211,7 +264,20 @@ export default function CreatePostModal() {
             }`}
           >
             <Users className="w-3.5 h-3.5 text-blue-500" />
-            <span>Peer Teammate</span>
+            <span>Find Teammates</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPostType("project")}
+            className={`flex-1 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              postType === "project"
+                ? "bg-card text-foreground font-semibold shadow-xs border border-border/60"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FolderGit2 className="w-3.5 h-3.5 text-amber-500" />
+            <span>Share Project</span>
           </button>
 
           <button
@@ -223,13 +289,13 @@ export default function CreatePostModal() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+            <Calendar className="w-3.5 h-3.5 text-purple-500" />
             <span>Club Event</span>
           </button>
         </div>
 
         <div className="flex items-center justify-between px-1 mb-4 text-[11px] text-muted-foreground">
-          <span>Starting a student organization?</span>
+          <span>Leading a student organization?</span>
           <button
             type="button"
             onClick={() => {
@@ -250,13 +316,13 @@ export default function CreatePostModal() {
             <>
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Project or Hackathon Name
+                  Target Hackathon or Project Name
                 </label>
                 <input
                   type="text"
                   value={projectTitle}
                   onChange={(e) => setProjectTitle(e.target.value)}
-                  placeholder="e.g. GenAI Hackathon 2026, Campus Food Bot"
+                  placeholder="e.g. GenAI Hackathon 2026, Campus Food Delivery Bot"
                   required
                   className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
                 />
@@ -264,25 +330,82 @@ export default function CreatePostModal() {
 
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Role / Skills You Need
+                  Role / Teammates Needed
                 </label>
                 <input
                   type="text"
                   value={roleNeeded}
                   onChange={(e) => setRoleNeeded(e.target.value)}
-                  placeholder="e.g. Frontend Engineer, UI/UX Designer, Python builder"
+                  placeholder="e.g. Frontend / UI Designer, ML Engineer, Python Dev"
                   className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
                 />
               </div>
 
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 block">
-                  Your Pitch / Details
+                  Team Pitch & Expectations
                 </label>
                 <textarea
                   value={pitch}
                   onChange={(e) => setPitch(e.target.value)}
-                  placeholder="Briefly describe what you're building and what kind of teammate you want to team up with..."
+                  placeholder="Describe your idea, what you bring to the table, and who you want on your squad..."
+                  rows={3}
+                  required
+                  className="w-full p-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground resize-none"
+                />
+              </div>
+            </>
+          ) : postType === "project" ? (
+            <>
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Project Name
+                </label>
+                <input
+                  type="text"
+                  value={showcaseTitle}
+                  onChange={(e) => setShowcaseTitle(e.target.value)}
+                  placeholder="e.g. Campus Notes AI, Timetable PWA, Smart Attendance"
+                  required
+                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  One-Line Tagline
+                </label>
+                <input
+                  type="text"
+                  value={showcaseTagline}
+                  onChange={(e) => setShowcaseTagline(e.target.value)}
+                  placeholder="e.g. Instant AI summaries and quiz generation for engineering lecture notes"
+                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block flex items-center justify-between">
+                  <span>Live Demo or GitHub Repository</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">Optional</span>
+                </label>
+                <input
+                  type="url"
+                  value={showcaseLink}
+                  onChange={(e) => setShowcaseLink(e.target.value)}
+                  placeholder="https://github.com/username/project or https://myproject.dev"
+                  className="w-full h-9 px-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Project Description & Key Features
+                </label>
+                <textarea
+                  value={showcaseDesc}
+                  onChange={(e) => setShowcaseDesc(e.target.value)}
+                  placeholder="Explain what the project solves, what tech stack was used, and how students can check it out..."
                   rows={3}
                   required
                   className="w-full p-3 text-xs bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary text-foreground placeholder:text-muted-foreground resize-none"
@@ -441,7 +564,9 @@ export default function CreatePostModal() {
               ) : (
                 <>
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Publish {postType === "event" ? "Club Event" : "Teammate Request"}</span>
+                  <span>
+                    Publish {postType === "event" ? "Club Event" : postType === "project" ? "Project Showcase" : "Teammate Request"}
+                  </span>
                 </>
               )}
             </Button>

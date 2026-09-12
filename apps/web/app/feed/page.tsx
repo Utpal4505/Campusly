@@ -723,14 +723,14 @@ export default function FeedPage() {
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               <Link href="/people">
-                <Button size="sm" variant="outline" className="h-8 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
+                <Button size="sm" variant="outline" className="h-8.5 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
                   <Users className="w-3.5 h-3.5" />
                   <span>Explore People Directory</span>
                 </Button>
               </Link>
-              <Button size="sm" onClick={() => setCreateModalOpen(true)} className="h-8 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Post Squad Request</span>
+              <Button size="sm" onClick={() => setCreateModalOpen(true, "teammate")} className="h-8.5 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Find Teammates</span>
               </Button>
             </div>
           </div>
@@ -743,12 +743,12 @@ export default function FeedPage() {
               Campus Project Showcases
             </h3>
             <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-              Share what you are building, open-source campus tools, or find student co-founders to bring ideas to life.
+              Showcase what you are building, demo open-source campus tools, and find student feedback or contributors.
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
-              <Button size="sm" onClick={() => setCreateModalOpen(true)} className="h-8 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
-                <Plus className="w-3.5 h-3.5" />
-                <span>Publish Project</span>
+              <Button size="sm" onClick={() => setCreateModalOpen(true, "project")} className="h-8.5 text-xs rounded-xl font-semibold gap-1.5 cursor-pointer">
+                <FolderGit2 className="w-3.5 h-3.5" />
+                <span>Share Project</span>
               </Button>
             </div>
           </div>

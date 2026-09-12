@@ -19,6 +19,7 @@ import {
   LogOut,
   ChevronDown,
   User,
+  Building2,
 } from "lucide-react";
 
 export default function AppHeader() {
@@ -54,6 +55,7 @@ export default function AppHeader() {
   const navLinks = [
     { href: "/feed", label: "For You", icon: Sparkles },
     { href: "/events", label: "Events", icon: Calendar },
+    { href: "/clubs", label: "Clubs", icon: Building2 },
     { href: "/tickets", label: "Tickets", icon: Ticket },
     { href: "/people", label: "People", icon: Users },
     { href: "/messages", label: "Messages", icon: MessageSquare, badge: "1" },

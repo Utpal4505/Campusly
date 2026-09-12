@@ -107,18 +107,19 @@ export default function EditInterestsModal() {
     setIsSaving(true);
     setError(null);
 
+    // Update local store immediately with selected items
+    const chosen = availableInterests
+      .filter((item) => localSelectedIds.includes(item.id))
+      .map((item) => ({ id: item.id, name: item.name }));
+    setSelectedInterests(chosen);
+
     try {
-      // Call PATCH /users/me/preferences
+      // Call PATCH /users/me/preferences if authenticated
       const result = await authClient.updatePreferences(localSelectedIds);
 
-      // Update local store with newly saved items
+      // Update local store with verified database items
       if (result.interests && result.interests.length > 0) {
         setSelectedInterests(result.interests);
-      } else {
-        const chosen = availableInterests
-          .filter((item) => localSelectedIds.includes(item.id))
-          .map((item) => ({ id: item.id, name: item.name }));
-        setSelectedInterests(chosen);
       }
 
       // Close modal
@@ -129,9 +130,20 @@ export default function EditInterestsModal() {
         window.dispatchEvent(new CustomEvent("campusly:preferences-updated"));
       }
     } catch (err: any) {
-      setError(
-        err?.message || "Failed to save preferences. Please check your connection."
-      );
+      if (
+        err?.status === 401 ||
+        err?.message?.toLowerCase().includes("authenticated")
+      ) {
+        // Guest mode / not authenticated: preferences saved in local session store
+        setEditInterestsOpen(false);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("campusly:preferences-updated"));
+        }
+      } else {
+        setError(
+          err?.message || "Failed to save preferences. Please check your connection."
+        );
+      }
     } finally {
       setIsSaving(false);
     }

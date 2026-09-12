@@ -117,18 +117,26 @@ export default function Hero() {
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
-              <Link href="/onboarding">
+              <Link href="/login?mode=register">
                 <Button className="h-10 px-5 rounded-xl text-xs font-bold shadow-xs gap-2 cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90">
-                  <span>Find Your Teammates Free</span>
+                  <span>Get Started Free</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/feed">
+              <Link href="/login">
                 <Button
                   variant="outline"
                   className="h-10 px-4.5 rounded-xl text-xs font-semibold border-border/80 bg-card hover:bg-muted/50 text-foreground cursor-pointer"
                 >
-                  Explore Campus Feed
+                  Log In
+                </Button>
+              </Link>
+              <Link href="/feed">
+                <Button
+                  variant="ghost"
+                  className="h-10 px-3.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Explore Feed
                 </Button>
               </Link>
             </div>

@@ -64,15 +64,18 @@ export default function LoginPage() {
         router.push("/onboarding");
       } else {
         await authClient.signIn(email, password);
-        const profile = await authClient.getMe();
-        setUserName(profile.name);
-
-        if (profile.interests && profile.interests.length > 0) {
-          setInterests(profile.interests.map((i) => i.name));
-          router.push("/feed");
-        } else {
-          router.push("/onboarding");
+        try {
+          const profile = await authClient.getMe();
+          if (profile?.name) setUserName(profile.name);
+          if (profile?.interests && profile.interests.length > 0) {
+            setInterests(profile.interests.map((i) => i.name));
+            router.push("/feed");
+            return;
+          }
+        } catch {
+          setUserName(email.split("@")[0] || "Student");
         }
+        router.push("/feed");
       }
     } catch (err: any) {
       setError(

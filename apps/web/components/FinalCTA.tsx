@@ -24,15 +24,15 @@ export default function FinalCTA() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/onboarding">
+            <Link href="/login?mode=register">
               <Button size="lg" className="rounded-xl px-7 gap-2 shadow-sm font-medium">
                 Get Started Free
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/explore">
-              <Button variant="outline" size="lg" className="rounded-xl px-6 text-muted-foreground hover:text-foreground">
-                Browse Campus Feed
+            <Link href="/login">
+              <Button variant="outline" size="lg" className="rounded-xl px-6 text-foreground hover:bg-muted/50">
+                Log In
               </Button>
             </Link>
           </div>

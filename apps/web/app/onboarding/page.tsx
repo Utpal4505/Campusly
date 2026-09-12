@@ -118,8 +118,19 @@ export default function OnboardingPage() {
             throw new Error("Please select at least 1 interest to continue.");
           }
 
-          // Call PATCH /users/me/preferences with selected interest IDs
-          await authClient.updatePreferences(interestIds);
+          // Call PATCH /users/me/preferences with selected interest IDs if authenticated
+          try {
+            await authClient.updatePreferences(interestIds);
+          } catch (err: any) {
+            if (
+              err?.status === 401 ||
+              err?.message?.toLowerCase().includes("authenticated")
+            ) {
+              // Guest session: selections are already safely stored in useCampusStore!
+            } else {
+              throw err;
+            }
+          }
 
           if (!isMounted) return;
           setLoadingStage(1);

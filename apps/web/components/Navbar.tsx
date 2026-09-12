@@ -54,10 +54,19 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Right 32px Action Group */}
+        {/* Right Action Group */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link href="/onboarding">
+          <Link href="/login">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-lg px-3 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Log in
+            </Button>
+          </Link>
+          <Link href="/login?mode=register">
             <Button size="sm" className="h-8 rounded-lg px-3.5 text-xs font-semibold shadow-xs cursor-pointer">
               Get Started
             </Button>

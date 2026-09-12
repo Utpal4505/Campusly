@@ -178,6 +178,81 @@ const SEED_EVENTS = [
   },
 ];
 
+const SEED_STUDENTS = [
+  {
+    id: 'seed-student-1',
+    name: 'Rahul Sharma',
+    email: 'rahul.sharma@lpu.in',
+    department: 'School of Computer Science & Engineering',
+    yearOfStudy: 3,
+    bio: 'Looking for teammates for hackathons and building agentic developer tools.',
+    interestNames: ['Artificial Intelligence', 'Web Development', 'Open Source', 'Startups'],
+  },
+  {
+    id: 'seed-student-2',
+    name: 'Ananya Singh',
+    email: 'ananya.singh@lpu.in',
+    department: 'School of Design',
+    yearOfStudy: 2,
+    bio: 'Interested in building student products and designing modern web experiences.',
+    interestNames: ['Design', 'UI/UX', 'Content Creation', 'Startups'],
+  },
+  {
+    id: 'seed-student-3',
+    name: 'Dev Kapoor',
+    email: 'dev.kapoor@lpu.in',
+    department: 'School of Computer Science & Engineering',
+    yearOfStudy: 3,
+    bio: 'Working on campus utilities and cross-platform Flutter/React Native tools.',
+    interestNames: ['Web Development', 'App Development', 'Open Source'],
+  },
+  {
+    id: 'seed-student-4',
+    name: 'Priya Verma',
+    email: 'priya.verma@lpu.in',
+    department: 'School of Computer Applications',
+    yearOfStudy: 3,
+    bio: 'Looking for research collaborators and hackathon partners for LLM projects.',
+    interestNames: ['Artificial Intelligence', 'Machine Learning', 'Data Science'],
+  },
+  {
+    id: 'seed-student-5',
+    name: 'Rohan Mehta',
+    email: 'rohan.mehta@lpu.in',
+    department: 'Mittal School of Business',
+    yearOfStudy: 4,
+    bio: 'Building student startup incubators and fintech tools. Seeking co-founders.',
+    interestNames: ['Startups', 'Entrepreneurship', 'Finance & Investing'],
+  },
+  {
+    id: 'seed-student-6',
+    name: 'Sneha Reddy',
+    email: 'sneha.reddy@lpu.in',
+    department: 'School of Electronics & Electrical Engineering',
+    yearOfStudy: 2,
+    bio: 'Autonomous bot engineering, drone navigation, and sensor firmware.',
+    interestNames: ['Robotics', 'Artificial Intelligence', 'Machine Learning'],
+  },
+  {
+    id: 'seed-student-7',
+    name: 'Aarav Patel',
+    email: 'aarav.patel@lpu.in',
+    department: 'School of Computer Science & Engineering',
+    yearOfStudy: 2,
+    bio: 'Competitive programmer (Candidate Master on CF). Looking for ICPC squad mates.',
+    interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
+  },
+  {
+    id: 'seed-student-8',
+    name: 'Tanvi Joshi',
+    email: 'tanvi.joshi@lpu.in',
+    department: 'School of Journalism & Film Production',
+    yearOfStudy: 3,
+    bio: 'Campus cinematography lead, event visual stories, and video editing.',
+    interestNames: ['Photography', 'Content Creation', 'Design'],
+  },
+];
+
 const SEED_CLUBS = [
   {
     id: 'seed-club-1',
@@ -401,6 +476,51 @@ async function main() {
     }
   }
   console.log(`✅ Successfully seeded ${SEED_CLUBS.length} campus clubs!`);
+
+  // Seed campus students and link their interests
+  console.log('🌱 Seeding campus students & peer profiles...');
+  for (const studentData of SEED_STUDENTS) {
+    const student = await prisma.user.upsert({
+      where: { email: studentData.email },
+      update: {
+        name: studentData.name,
+        department: studentData.department,
+        yearOfStudy: studentData.yearOfStudy,
+        bio: studentData.bio,
+      },
+      create: {
+        id: studentData.id,
+        name: studentData.name,
+        email: studentData.email,
+        department: studentData.department,
+        yearOfStudy: studentData.yearOfStudy,
+        bio: studentData.bio,
+        emailVerified: true,
+      },
+    });
+
+    for (const interestName of studentData.interestNames) {
+      const interest = await prisma.interest.findUnique({
+        where: { name: interestName },
+      });
+      if (interest) {
+        await prisma.userInterest.upsert({
+          where: {
+            userId_interestId: {
+              userId: student.id,
+              interestId: interest.id,
+            },
+          },
+          update: {},
+          create: {
+            userId: student.id,
+            interestId: interest.id,
+          },
+        });
+      }
+    }
+  }
+  console.log(`✅ Successfully seeded ${SEED_STUDENTS.length} campus students!`);
 }
 
 main()

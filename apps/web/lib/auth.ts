@@ -4,6 +4,7 @@ import type {
   EventDetail,
   ClubCard,
   ClubDetail,
+  UserCard,
 } from '@repo/schemas';
 import { apiFetch } from './api';
 
@@ -204,6 +205,32 @@ export const authClient = {
   }> {
     return apiFetch(`/clubs/${id}/join`, {
       method: 'POST',
+    });
+  },
+
+  /**
+   * Fetch all campus students/peers from PostgreSQL.
+   */
+  async getUsers(interest?: string, search?: string): Promise<UserCard[]> {
+    const params = new URLSearchParams();
+    if (interest && interest !== 'All') {
+      params.set('interest', interest);
+    }
+    if (search && search.trim()) {
+      params.set('search', search.trim());
+    }
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<UserCard[]>(`/users${qs}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Fetch single user/peer details by ID or slug from PostgreSQL.
+   */
+  async getUser(id: string): Promise<UserCard> {
+    return apiFetch<UserCard>(`/users/${id}`, {
+      method: 'GET',
     });
   },
 };

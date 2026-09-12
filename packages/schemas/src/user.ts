@@ -6,10 +6,10 @@ export const updatePreferencesSchema = z.object({
 
 export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 
-export const userProfileSchema = z.object({
+export const userCardSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   image: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),
   department: z.string().nullable().optional(),
@@ -22,5 +22,9 @@ export const userProfileSchema = z.object({
     })
   ),
 });
+
+export type UserCard = z.infer<typeof userCardSchema>;
+
+export const userProfileSchema = userCardSchema.extend({});
 
 export type UserProfile = z.infer<typeof userProfileSchema>;

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { getAnimeAvatar } from "@/lib/avatars";
+import { authClient } from "@/lib/auth";
+import type { UserCard } from "@repo/schemas";
 import {
   ArrowLeft,
   MessageSquare,
@@ -239,7 +241,25 @@ export default function StudentProfilePage() {
   const rawSlug = (params?.slug as string) || "rahul-sharma";
   const slug = rawSlug.toLowerCase();
 
-  const student: StudentData = students[slug] || {
+  const [dbUser, setDbUser] = useState<UserCard | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    authClient
+      .getUser(rawSlug)
+      .then((data) => {
+        if (isMounted) setDbUser(data);
+      })
+      .catch((err) => {
+        console.warn("Could not fetch user details from database:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawSlug]);
+
+  const fallbackStudent: StudentData = students[slug] || {
     name: rawSlug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
     avatar: rawSlug.substring(0, 2).toUpperCase(),
     degree: "Computer Science · 2nd Year",
@@ -270,6 +290,20 @@ export default function StudentProfilePage() {
     socials: {
       github: "github.com",
     },
+  };
+
+  const student: StudentData = {
+    ...fallbackStudent,
+    name: dbUser?.name || fallbackStudent.name,
+    department: dbUser?.department || fallbackStudent.department,
+    degree: dbUser?.yearOfStudy
+      ? `${dbUser.department || "B.Tech CSE"} · Year ${dbUser.yearOfStudy}`
+      : fallbackStudent.degree,
+    about: dbUser?.bio || fallbackStudent.about,
+    interests:
+      dbUser?.interests && dbUser.interests.length > 0
+        ? dbUser.interests.map((i: { id: string; name: string }) => i.name)
+        : fallbackStudent.interests,
   };
 
   const [isConnected, setIsConnected] = useState(false);

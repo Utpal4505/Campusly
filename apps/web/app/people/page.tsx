@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
 import { getAnimeAvatar } from "@/lib/avatars";
+import { authClient } from "@/lib/auth";
+import type { UserCard } from "@repo/schemas";
 import {
   ArrowLeft,
   Search,
@@ -13,6 +15,7 @@ import {
   UserPlus,
   Sparkles,
   Check,
+  Loader2,
 } from "lucide-react";
 
 interface Peer {
@@ -25,62 +28,96 @@ interface Peer {
   tags: string[];
 }
 
-const peers: Peer[] = [
-  {
-    id: "1",
-    slug: "rahul-sharma",
-    name: "Rahul Sharma",
-    avatar: "RS",
-    role: "AI · Backend · Web Development",
-    bio: "“Looking for teammates for hackathons and building agentic developer tools.”",
-    tags: ["AI", "Backend", "FastAPI", "Python"],
-  },
-  {
-    id: "2",
-    slug: "ananya-singh",
-    name: "Ananya Singh",
-    avatar: "AS",
-    role: "UI/UX · Design · Startups",
-    bio: "“Interested in building student products and designing modern web experiences.”",
-    tags: ["Design", "Figma", "React", "Startups"],
-  },
-  {
-    id: "3",
-    slug: "dev-kapoor",
-    name: "Dev Kapoor",
-    avatar: "DK",
-    role: "Full Stack · Mobile · Open Source",
-    bio: "“Working on campus utilities and cross-platform Flutter/React Native tools.”",
-    tags: ["Web Dev", "Mobile", "TypeScript"],
-  },
-  {
-    id: "4",
-    slug: "priya-verma",
-    name: "Priya Verma",
-    avatar: "PV",
-    role: "Data Science · PyTorch · ML Research",
-    bio: "“Looking for research collaborators and hackathon partners for LLM projects.”",
-    tags: ["AI", "Research", "PyTorch"],
-  },
-];
-
 export default function PeoplePage() {
+  const [dbUsers, setDbUsers] = useState<UserCard[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedTag, setSelectedTag] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({});
 
-  const filterTags = ["All", "AI", "Web Dev", "Design", "Startups", "Mobile"];
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    authClient
+      .getUsers()
+      .then((users) => {
+        if (!isMounted) return;
+        setDbUsers(users);
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch live campus students:", err);
+        if (isMounted) setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filterTags = [
+    "All",
+    "Artificial Intelligence",
+    "Web Development",
+    "Design",
+    "Startups",
+    "Robotics",
+    "Open Source",
+  ];
 
   const toggleConnect = (id: string) => {
     setConnectedMap((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const peers: Peer[] = dbUsers.map((user) => {
+    const slug = user.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+    const initials = user.name
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+    const tags =
+      user.interests && user.interests.length > 0
+        ? user.interests.map((i: { id: string; name: string }) => i.name)
+        : ["Campus Student"];
+    const role = [
+      user.department || "LPU Student",
+      user.yearOfStudy ? `Year ${user.yearOfStudy}` : null,
+      tags.slice(0, 2).join(" · "),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    return {
+      id: user.id,
+      slug: slug || user.id,
+      name: user.name,
+      avatar: initials || "ST",
+      role,
+      bio:
+        user.bio ||
+        `“Passionate student interested in ${tags.slice(0, 3).join(", ")}. Looking to collaborate on campus projects!”`,
+      tags,
+    };
+  });
+
   const filteredPeers = peers.filter((p) => {
-    const matchesTag = selectedTag === "All" || p.tags.includes(selectedTag);
+    const matchesTag =
+      selectedTag === "All" ||
+      p.tags.some(
+        (t) =>
+          t.toLowerCase() === selectedTag.toLowerCase() ||
+          t.toLowerCase().includes(selectedTag.toLowerCase())
+      );
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.bio.toLowerCase().includes(searchQuery.toLowerCase());
+      p.bio.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesTag && matchesSearch;
   });
 
@@ -133,11 +170,22 @@ export default function PeoplePage() {
 
         {/* Peer List */}
         <div className="space-y-4">
-          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Looking for teammates ({filteredPeers.length})
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <span>Looking for teammates ({filteredPeers.length})</span>
+            {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />}
           </div>
 
-          {filteredPeers.map((peer) => {
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <span className="text-xs font-medium">Discovering campus peers from database...</span>
+            </div>
+          ) : filteredPeers.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-xs p-8 rounded-2xl border border-dashed border-border/80">
+              No students found matching your filter criteria.
+            </div>
+          ) : (
+            filteredPeers.map((peer) => {
             const isConnected = !!connectedMap[peer.id];
             return (
               <div
@@ -230,7 +278,7 @@ export default function PeoplePage() {
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
 
       </main>

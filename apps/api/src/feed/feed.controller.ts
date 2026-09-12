@@ -43,6 +43,20 @@ export class FeedController {
       }
     }
 
-    return this.feedService.getFeed(userId);
+    const queryInterestIds =
+      typeof req.query.interestIds === 'string'
+        ? req.query.interestIds.split(',').map((s) => s.trim()).filter(Boolean)
+        : Array.isArray(req.query.interestIds)
+        ? (req.query.interestIds as string[])
+        : undefined;
+
+    const queryInterestNames =
+      typeof req.query.interests === 'string'
+        ? req.query.interests.split(',').map((s) => s.trim()).filter(Boolean)
+        : Array.isArray(req.query.interests)
+        ? (req.query.interests as string[])
+        : undefined;
+
+    return this.feedService.getFeed(userId, queryInterestIds, queryInterestNames);
   }
 }

@@ -147,7 +147,11 @@ export default function FeedPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res: FeedResponse = await authClient.getFeed();
+      const store = useCampusStore.getState();
+      const res: FeedResponse = await authClient.getFeed(
+        store.interestIds,
+        store.interests
+      );
       const mapped = res.items.map(mapBackendItemToFeedItem);
       setBackendFeedItems(mapped);
       setHasPersonalizedResults(res.hasPersonalizedResults);

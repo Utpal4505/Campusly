@@ -71,7 +71,7 @@ const SEED_EVENTS = [
       'Interactive workshop on design thinking, Figma component architectures, and prototyping for real student products.',
     date: new Date('2026-11-02T11:00:00Z'),
     location: 'Design Studio A, Block 12',
-    interestNames: ['Design', 'UI/UX'],
+    interestNames: ['Design', 'UI/UX', 'Content Creation'],
   },
   {
     id: 'seed-event-4',
@@ -85,6 +85,96 @@ const SEED_EVENTS = [
       'Entrepreneurship',
       'Finance & Investing',
     ],
+  },
+  {
+    id: 'seed-event-5',
+    title: 'CTF Cybersecurity Bootcamp & Live War Games',
+    description:
+      '48-hour ethical hacking challenge. Penetration testing, cryptography puzzles, web vulnerability exploitation, and defense.',
+    date: new Date('2026-11-15T10:00:00Z'),
+    location: 'Cyber Defense Lab, Block 34',
+    interestNames: ['Cybersecurity', 'Cloud Computing', 'Open Source'],
+  },
+  {
+    id: 'seed-event-6',
+    title: 'Algorithmic Code Clash 2026',
+    description:
+      'Speed programming competition on advanced dynamic programming, graph theory, and algorithmic problem solving.',
+    date: new Date('2026-11-20T16:00:00Z'),
+    location: 'Online & Central Computing Lab 4',
+    interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
+  },
+  {
+    id: 'seed-event-7',
+    title: 'Flutter & React Native Mobile Hack Jam',
+    description:
+      'Build and publish cross-platform iOS & Android apps in a weekend. Industry mentor code reviews and prizes.',
+    date: new Date('2026-11-28T09:30:00Z'),
+    location: 'Mobile Innovation Suite, Block 28',
+    interestNames: ['App Development', 'Web Development', 'UI/UX'],
+  },
+  {
+    id: 'seed-event-8',
+    title: 'Campus Esports Championship: Valorant & BGMI',
+    description:
+      'Inter-college gaming tournament with live casting, spectator arena, and ₹40,000 prize pool.',
+    date: new Date('2026-12-05T13:00:00Z'),
+    location: 'Indoor Sports Arena & Gaming Lounge',
+    interestNames: ['Gaming', 'Content Creation', 'Design'],
+  },
+  {
+    id: 'seed-event-9',
+    title: 'Kaggle Campus Cup: Predictive ML Datathon',
+    description:
+      'Analyze complex campus datasets to build predictive models. Real-world machine learning challenge for student data scientists.',
+    date: new Date('2026-12-10T10:00:00Z'),
+    location: 'Data Analytics Wing, Block 32',
+    interestNames: ['Data Science', 'Machine Learning', 'Artificial Intelligence'],
+  },
+  {
+    id: 'seed-event-10',
+    title: 'Acoustic Unplugged & Indie Music Jam',
+    description:
+      'Open mic night for student vocalists, bands, and instrumentalists. High-energy music and creative collaboration.',
+    date: new Date('2026-12-15T18:00:00Z'),
+    location: 'Amphitheatre Central Green',
+    interestNames: ['Music', 'Content Creation'],
+  },
+  {
+    id: 'seed-event-11',
+    title: 'Campus Photo Walk & Street Photography Exhibition',
+    description:
+      'Guided photography tour focusing on golden-hour campus architecture, candid portraits, and Lightroom editing.',
+    date: new Date('2026-12-20T15:30:00Z'),
+    location: 'Main University Plaza',
+    interestNames: ['Photography', 'Content Creation', 'Design'],
+  },
+  {
+    id: 'seed-event-12',
+    title: 'Parliamentary Debate & Eloquence Gala',
+    description:
+      'National-style Asian parliamentary debate championship. Sharpen oratory mastery, critical argumentation, and diplomacy.',
+    date: new Date('2026-12-28T11:00:00Z'),
+    location: 'Senate Chambers, Block 1',
+    interestNames: ['Debate', 'Public Speaking', 'Entrepreneurship'],
+  },
+  {
+    id: 'seed-event-13',
+    title: 'LPU Premier League: T20 Cricket Cup',
+    description:
+      'Annual departmental cricket league. 16 teams battle for the campus championship cup with floodlit finals.',
+    date: new Date('2027-01-10T14:00:00Z'),
+    location: 'University Sports Complex Grounds',
+    interestNames: ['Cricket', 'Fitness & Health'],
+  },
+  {
+    id: 'seed-event-14',
+    title: 'Inter-Department Football Derby & League',
+    description:
+      '7-a-side competitive soccer league with scouts, refereeing, and athletic awards for student football players.',
+    date: new Date('2027-01-18T16:30:00Z'),
+    location: 'Main Football Turf Stadium',
+    interestNames: ['Football', 'Fitness & Health'],
   },
 ];
 
@@ -128,6 +218,76 @@ const SEED_CLUBS = [
       'Entrepreneurship',
       'Finance & Investing',
     ],
+  },
+  {
+    id: 'seed-club-5',
+    name: 'CyberShield Information Security Society',
+    description:
+      'White-hat ethical hackers and security researchers. Hands-on bug bounty hunting, reverse engineering, and defensive forensics.',
+    interestNames: ['Cybersecurity', 'Cloud Computing', 'Blockchain'],
+  },
+  {
+    id: 'seed-club-6',
+    name: 'Competitive Coding & Algorithmic Guild',
+    description:
+      'Dedicated training club for Codeforces, LeetCode, and ICPC contests with weekly live mock rounds and problem editorial discussions.',
+    interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
+  },
+  {
+    id: 'seed-club-7',
+    name: 'Mobile App Developers Guild',
+    description:
+      'Community building slick native & cross-platform Android and iOS applications with Flutter, Swift, and React Native.',
+    interestNames: ['App Development', 'Web Development', 'UI/UX'],
+  },
+  {
+    id: 'seed-club-8',
+    name: 'GameCraft & Esports Union',
+    description:
+      'Unity and Unreal engine game developers, 3D modelers, and competitive esports organizers uniting gamers across campus.',
+    interestNames: ['Gaming', 'Design', 'App Development'],
+  },
+  {
+    id: 'seed-club-9',
+    name: 'Data Science & Machine Learning Hub',
+    description:
+      'Applied analytics group working on big data, LLM fine-tuning, computer vision, and quantitative research papers.',
+    interestNames: ['Data Science', 'Machine Learning', 'Artificial Intelligence'],
+  },
+  {
+    id: 'seed-club-10',
+    name: 'Campus Music Society & Sound Lab',
+    description:
+      'Bands, vocalists, audio producers, and live session musicians organizing acoustic jams and campus concerts.',
+    interestNames: ['Music', 'Content Creation'],
+  },
+  {
+    id: 'seed-club-11',
+    name: 'Shutterbugs Photography & Media Guild',
+    description:
+      'Visual storytellers mastering DSLR photography, cinematography, color grading, and creative campus media coverage.',
+    interestNames: ['Photography', 'Content Creation', 'Design'],
+  },
+  {
+    id: 'seed-club-12',
+    name: 'Toastmasters & Campus Debate Union',
+    description:
+      'Elite oratory club fostering charismatic public speaking, parliamentary debate, negotiation, and campus leadership.',
+    interestNames: ['Public Speaking', 'Debate', 'Entrepreneurship'],
+  },
+  {
+    id: 'seed-club-13',
+    name: 'Campus Athletics, Cricket & Football Club',
+    description:
+      'Official student sports body organizing intramural tournaments, varsity cricket matches, and fitness training.',
+    interestNames: ['Cricket', 'Football', 'Fitness & Health'],
+  },
+  {
+    id: 'seed-club-14',
+    name: 'Blockchain & FinTech Society',
+    description:
+      'Student chapter researching decentralized protocols, smart contract auditing, algorithmic trading, and personal finance.',
+    interestNames: ['Blockchain', 'Finance & Investing', 'Cybersecurity'],
   },
 ];
 

@@ -11,7 +11,11 @@ export class FeedService {
    * If a userId is provided and the user has selected interests, items with overlapping
    * interests are prioritized with human-readable matched interest tags.
    */
-  async getFeed(userId?: string): Promise<FeedResponse> {
+  async getFeed(
+    userId?: string,
+    queryInterestIds?: string[],
+    queryInterestNames?: string[],
+  ): Promise<FeedResponse> {
     const userInterestIds = new Set<string>();
 
     if (userId) {
@@ -21,6 +25,22 @@ export class FeedService {
       });
       for (const ui of userInterests) {
         userInterestIds.add(ui.interestId);
+      }
+    }
+
+    if (queryInterestIds && queryInterestIds.length > 0) {
+      for (const id of queryInterestIds) {
+        userInterestIds.add(id);
+      }
+    }
+
+    if (queryInterestNames && queryInterestNames.length > 0) {
+      const matched = await this.prisma.interest.findMany({
+        where: { name: { in: queryInterestNames } },
+        select: { id: true },
+      });
+      for (const m of matched) {
+        userInterestIds.add(m.id);
       }
     }
 

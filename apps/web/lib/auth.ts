@@ -119,8 +119,19 @@ export const authClient = {
   /**
    * Fetch personalized or discovery campus feed.
    */
-  async getFeed(): Promise<FeedResponse> {
-    return apiFetch<FeedResponse>('/feed', {
+  async getFeed(
+    interestIds?: string[],
+    interests?: string[],
+  ): Promise<FeedResponse> {
+    const params = new URLSearchParams();
+    if (interestIds && interestIds.length > 0) {
+      params.set('interestIds', interestIds.join(','));
+    }
+    if (interests && interests.length > 0) {
+      params.set('interests', interests.join(','));
+    }
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return apiFetch<FeedResponse>(`/feed${queryString}`, {
       method: 'GET',
     });
   },

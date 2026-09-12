@@ -92,7 +92,11 @@ function LoginPageContent() {
         } catch {
           setUserName(email.split("@")[0] || "Student");
         }
-        router.push(redirectUrl);
+        if (typeof window !== "undefined") {
+          window.location.href = redirectUrl;
+        } else {
+          router.push(redirectUrl);
+        }
       }
     } catch (err: any) {
       setError(
@@ -118,10 +122,11 @@ function LoginPageContent() {
       await authClient.verifyEmailOTP(email, otp.trim());
       const studentName = name.trim() || email.split("@")[0] || "Student";
       setUserName(studentName);
-      if (redirectUrl && redirectUrl !== "/feed") {
-        router.push(redirectUrl);
+      const target = redirectUrl && redirectUrl !== "/feed" ? redirectUrl : "/onboarding";
+      if (typeof window !== "undefined") {
+        window.location.href = target;
       } else {
-        router.push("/onboarding");
+        router.push(target);
       }
     } catch (err: any) {
       setError(
@@ -178,18 +183,30 @@ function LoginPageContent() {
         await authClient.signUp(demoEmail, demoPassword, demoName);
       }
 
-      const profile = await authClient.getMe();
-      setUserName(profile.name || demoName);
-      if (profile.interests && profile.interests.length > 0) {
+      const profile = await authClient.getMe().catch(() => null);
+      if (profile?.name) {
+        setUserName(profile.name);
+      } else {
+        setUserName(demoName);
+      }
+      if (profile?.interests && profile.interests.length > 0) {
         setInterests(profile.interests.map((i) => i.name));
       } else {
         setInterests(roleInterests);
       }
-      router.push(redirectUrl);
+      if (typeof window !== "undefined") {
+        window.location.href = redirectUrl;
+      } else {
+        router.push(redirectUrl);
+      }
     } catch {
       setUserName(demoName);
       setInterests(roleInterests);
-      router.push(redirectUrl);
+      if (typeof window !== "undefined") {
+        window.location.href = redirectUrl;
+      } else {
+        router.push(redirectUrl);
+      }
     } finally {
       setIsLoading(false);
     }

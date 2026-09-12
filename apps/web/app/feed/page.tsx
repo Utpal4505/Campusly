@@ -176,14 +176,10 @@ export default function FeedPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchFeed();
-    }
+    fetchFeed();
 
     const handlePreferencesUpdated = () => {
-      if (isAuthenticated) {
-        fetchFeed();
-      }
+      fetchFeed();
     };
 
     if (typeof window !== "undefined") {
@@ -201,7 +197,7 @@ export default function FeedPage() {
         );
       }
     };
-  }, [fetchFeed]);
+  }, [fetchFeed, isAuthenticated]);
 
   const handleAction = (id: string) => {
     setInteractedMap((prev) => ({ ...prev, [id]: !prev[id] }));

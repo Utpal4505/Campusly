@@ -59,13 +59,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchAuth();
 
-    const handlePrefUpdate = () => {
+    const handleAuthUpdate = () => {
       fetchAuth();
     };
 
-    window.addEventListener("campusly:preferences-updated", handlePrefUpdate);
+    window.addEventListener("campusly:preferences-updated", handleAuthUpdate);
+    window.addEventListener("campusly:auth-changed", handleAuthUpdate);
     return () => {
-      window.removeEventListener("campusly:preferences-updated", handlePrefUpdate);
+      window.removeEventListener("campusly:preferences-updated", handleAuthUpdate);
+      window.removeEventListener("campusly:auth-changed", handleAuthUpdate);
     };
   }, [fetchAuth]);
 

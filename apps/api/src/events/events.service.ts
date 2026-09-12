@@ -43,6 +43,8 @@ export class EventsService {
       description: event.description,
       date: event.date,
       location: event.location,
+      price: event.price ?? 0,
+      currency: event.currency ?? 'INR',
       creator: {
         id: event.creator.id,
         name: event.creator.name,
@@ -72,6 +74,8 @@ export class EventsService {
       description: event.description,
       date: event.date,
       location: event.location,
+      price: event.price ?? 0,
+      currency: event.currency ?? 'INR',
       creator: {
         id: event.creator.id,
         name: event.creator.name,
@@ -89,7 +93,7 @@ export class EventsService {
   /**
    * Helper to find an event by exact ID, lowercased ID, or slugified title.
    */
-  private async findEventRecord(idOrSlug: string) {
+  public async findEventRecord(idOrSlug: string) {
     const direct = await this.prisma.event.findUnique({
       where: { id: idOrSlug },
       include: {
@@ -202,12 +206,16 @@ export class EventsService {
       description?: string | null;
       date: Date | string;
       location?: string | null;
+      price?: number;
+      currency?: string;
       interestIds?: string[];
       interestNames?: string[];
     },
     creatorId: string,
   ) {
     const eventDate = new Date(data.date);
+    const price = typeof data.price === 'number' ? data.price : 0;
+    const currency = data.currency || 'INR';
 
     const event = await this.prisma.event.create({
       data: {
@@ -215,6 +223,8 @@ export class EventsService {
         description: data.description || null,
         date: isNaN(eventDate.getTime()) ? new Date() : eventDate,
         location: data.location || 'LPU Campus',
+        price,
+        currency,
         creatorId,
       },
     });

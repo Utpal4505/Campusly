@@ -132,6 +132,8 @@ model Event {
   description   String?
   date          DateTime
   location      String?
+  price         Int                 @default(0)
+  currency      String              @default("INR")
   creatorId     String
   creator       User                @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   registrations EventRegistration[]
@@ -143,12 +145,16 @@ model Event {
 }
 
 model EventRegistration {
-  id        String   @id @default(cuid())
-  userId    String
-  eventId   String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  eventId       String
+  paymentStatus String   @default("FREE")
+  paymentId     String?
+  orderId       String?
+  amount        Int      @default(0)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event         Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
 
   @@unique([userId, eventId])
   @@map("event_registration")

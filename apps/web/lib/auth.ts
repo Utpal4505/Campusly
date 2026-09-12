@@ -66,6 +66,49 @@ export const authClient = {
   },
 
   /**
+   * Initiate Social Login (e.g. Google OAuth).
+   */
+  async signInSocial(provider: 'google' = 'google', callbackURL: string = '/feed') {
+    const res = await apiFetch<{ url: string; redirect: boolean }>('/api/auth/sign-in/social', {
+      method: 'POST',
+      body: JSON.stringify({
+        provider,
+        callbackURL: typeof window !== 'undefined' ? `${window.location.origin}${callbackURL}` : callbackURL,
+      }),
+    });
+    if (res?.url && typeof window !== 'undefined') {
+      window.location.href = res.url;
+    }
+    return res;
+  },
+
+  /**
+   * Send Email Verification OTP to student.
+   */
+  async sendVerificationOTP(email: string) {
+    return apiFetch<{ success: boolean }>('/api/auth/email-otp/send-verification-otp', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        type: 'email-verification',
+      }),
+    });
+  },
+
+  /**
+   * Verify student account via 6-digit OTP.
+   */
+  async verifyEmailOTP(email: string, otp: string) {
+    return apiFetch<{ status: boolean; user?: any }>('/api/auth/email-otp/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        otp,
+      }),
+    });
+  },
+
+  /**
    * Retrieve active Better Auth session.
    */
   async getSession(): Promise<UserSession | null> {
@@ -263,6 +306,46 @@ export const authClient = {
    */
   async createPost(payload: CreatePostInput): Promise<PostCard> {
     return apiFetch<PostCard>('/posts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Create Razorpay payment order for paid event or direct register if free.
+   */
+  async createPaymentOrder(eventId: string): Promise<{
+    isFree: boolean;
+    registered?: boolean;
+    message?: string;
+    orderId?: string;
+    amount?: number;
+    currency?: string;
+    keyId?: string;
+    eventTitle?: string;
+    price?: number;
+  }> {
+    return apiFetch(`/events/${eventId}/payment/order`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Verify Razorpay payment signature on server.
+   */
+  async verifyPayment(
+    eventId: string,
+    payload: {
+      razorpayOrderId: string;
+      razorpayPaymentId: string;
+      razorpaySignature: string;
+    }
+  ): Promise<{
+    success: boolean;
+    message: string;
+    registration: any;
+  }> {
+    return apiFetch(`/events/${eventId}/payment/verify`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });

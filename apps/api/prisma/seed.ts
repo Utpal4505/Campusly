@@ -45,6 +45,7 @@ const SEED_EVENTS = [
       'Annual 36-hour student hackathon. Build innovative AI, Web, and Mobile solutions with mentorship and sponsor prizes.',
     date: new Date('2026-10-20T09:00:00Z'),
     location: 'Main Auditorium, Block 34',
+    price: 199,
     interestNames: [
       'Artificial Intelligence',
       'Web Development',
@@ -120,6 +121,7 @@ const SEED_EVENTS = [
       'Inter-college gaming tournament with live casting, spectator arena, and ₹40,000 prize pool.',
     date: new Date('2026-12-05T13:00:00Z'),
     location: 'Indoor Sports Arena & Gaming Lounge',
+    price: 299,
     interestNames: ['Gaming', 'Content Creation', 'Design'],
   },
   {
@@ -129,6 +131,7 @@ const SEED_EVENTS = [
       'Analyze complex campus datasets to build predictive models. Real-world machine learning challenge for student data scientists.',
     date: new Date('2026-12-10T10:00:00Z'),
     location: 'Data Analytics Wing, Block 32',
+    price: 149,
     interestNames: ['Data Science', 'Machine Learning', 'Artificial Intelligence'],
   },
   {
@@ -404,6 +407,8 @@ async function main() {
         description: eventData.description,
         date: eventData.date,
         location: eventData.location,
+        price: (eventData as any).price ?? 0,
+        currency: 'INR',
       },
       create: {
         id: eventData.id,
@@ -411,6 +416,8 @@ async function main() {
         description: eventData.description,
         date: eventData.date,
         location: eventData.location,
+        price: (eventData as any).price ?? 0,
+        currency: 'INR',
         creatorId: organizer.id,
       },
     });

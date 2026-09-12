@@ -118,8 +118,9 @@ export default function EventsDirectoryPage() {
             tags: event.interests.map((i) => i.name),
             spotsRemaining: Math.max(12, 120 - event.registrationCount),
             prizePool: prize,
-            isFree: true,
-            entryFee: "Free Pass",
+            price: event.price ?? 0,
+            isFree: (event.price ?? 0) === 0,
+            entryFee: (event.price ?? 0) === 0 ? "Free Pass" : `₹${event.price}`,
             category: event.interests[0]?.name || "Campus Event",
             accentColor: ACCENT_KEYS[index % ACCENT_KEYS.length] || "blue",
           };

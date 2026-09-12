@@ -9,6 +9,7 @@ import { EventsModule } from './events/events.module.js';
 import { ClubsModule } from './clubs/clubs.module.js';
 import { FeedModule } from './feed/feed.module.js';
 import { PostsModule } from './posts/posts.module.js';
+import { PaymentsModule } from './payments/payments.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PostsModule } from './posts/posts.module.js';
     ClubsModule,
     FeedModule,
     PostsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

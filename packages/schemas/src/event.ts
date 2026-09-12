@@ -6,6 +6,8 @@ export const eventCardSchema = z.object({
   description: z.string().nullable(),
   date: z.date().or(z.string()),
   location: z.string().nullable(),
+  price: z.number().default(0),
+  currency: z.string().default("INR"),
   creator: z.object({
     id: z.string(),
     name: z.string(),
@@ -36,8 +38,19 @@ export const createEventSchema = z.object({
   description: z.string().optional().nullable(),
   date: z.date().or(z.string()),
   location: z.string().optional().nullable(),
+  price: z.number().optional(),
+  currency: z.string().optional(),
   interestIds: z.array(z.string()).optional(),
   interestNames: z.array(z.string()).optional(),
 });
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+export const verifyPaymentSchema = z.object({
+  eventId: z.string(),
+  razorpayOrderId: z.string(),
+  razorpayPaymentId: z.string(),
+  razorpaySignature: z.string(),
+});
+
+export type VerifyPaymentInput = z.infer<typeof verifyPaymentSchema>;

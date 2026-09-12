@@ -43,7 +43,23 @@ export default function EventDetailPage() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+  const [paymentReceipt, setPaymentReceipt] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Load Razorpay Checkout SDK
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+      return () => {
+        if (document.body.contains(script)) {
+          document.body.removeChild(script);
+        }
+      };
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -81,6 +97,10 @@ export default function EventDetailPage() {
       })
     : fallback.time;
 
+  const eventPrice = liveEvent?.price ?? (fallback.isFree ? 0 : 199);
+  const isFree = eventPrice === 0;
+  const entryFee = isFree ? "Free Entry" : `₹${eventPrice} / Participant`;
+
   const event = {
     id: liveEvent?.id || fallback.id,
     slug: rawSlug,
@@ -96,8 +116,9 @@ export default function EventDetailPage() {
     venueDirections: fallback.venueDirections,
     host: liveEvent?.creator?.name || fallback.host,
     hostSlug: fallback.hostSlug,
-    entryFee: fallback.entryFee,
-    isFree: fallback.isFree,
+    entryFee,
+    isFree,
+    price: eventPrice,
     prizePool: fallback.prizePool,
     spotsTotal: 120,
     spotsRemaining: liveEvent
@@ -126,8 +147,67 @@ export default function EventDetailPage() {
     setIsRegistering(true);
     setRegisterError(null);
     try {
-      await authClient.registerEvent(event.id);
-      setIsRegistered(true);
+      const order = await authClient.createPaymentOrder(event.id);
+
+      // If free event, registration was confirmed directly
+      if (order.isFree || order.registered) {
+        setIsRegistered(true);
+        setPaymentReceipt(`FREE-${Date.now().toString().slice(-6)}`);
+        setIsRegistering(false);
+        return;
+      }
+
+      // If paid event: Check for Razorpay checkout SDK
+      if (typeof window !== "undefined" && (window as any).Razorpay) {
+        const options = {
+          key: order.keyId || "rzp_test_campusly_dev",
+          amount: order.amount,
+          currency: order.currency || "INR",
+          name: "Campusly",
+          description: `${event.title} Registration Fee`,
+          order_id: order.orderId,
+          prefill: {
+            name: "Student Participant",
+            email: "student@university.edu",
+          },
+          theme: {
+            color: "#7c3aed",
+          },
+          handler: async (response: any) => {
+            try {
+              await authClient.verifyPayment(event.id, {
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              setPaymentReceipt(response.razorpay_payment_id);
+              setIsRegistered(true);
+            } catch (err: any) {
+              setRegisterError(err?.message || "Payment verification failed.");
+            } finally {
+              setIsRegistering(false);
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              setIsRegistering(false);
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        // Dev / test mode fallback when Razorpay script isn't loaded:
+        await authClient.verifyPayment(event.id, {
+          razorpayOrderId: order.orderId || `order_${Date.now()}`,
+          razorpayPaymentId: `pay_sim_${Date.now().toString().slice(-6)}`,
+          razorpaySignature: "simulated_success",
+        });
+        setPaymentReceipt(`pay_sim_${Date.now().toString().slice(-6)}`);
+        setIsRegistered(true);
+        setIsRegistering(false);
+      }
     } catch (err: any) {
       const errMsg = err?.message || String(err);
       if (
@@ -143,7 +223,6 @@ export default function EventDetailPage() {
         return;
       }
       setRegisterError(errMsg || "Registration failed. Please try again.");
-    } finally {
       setIsRegistering(false);
     }
   };
@@ -427,11 +506,25 @@ export default function EventDetailPage() {
                       </div>
                     </div>
 
-                    <div className="pt-1 border-t border-border/40 text-[11px]">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold block">
-                        Venue
-                      </span>
-                      <span className="font-semibold text-foreground">{event.venue}</span>
+                    <div className="pt-1 border-t border-border/40 text-[11px] flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                          Payment Status
+                        </span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          {event.isFree ? "Free Student Pass ✓" : `Paid (₹${event.price}) ✓`}
+                        </span>
+                      </div>
+                      {paymentReceipt && (
+                        <div className="text-right">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold block">
+                            Receipt
+                          </span>
+                          <span className="font-mono text-[10px] text-muted-foreground">
+                            {paymentReceipt}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -490,7 +583,13 @@ export default function EventDetailPage() {
                     ) : (
                       <Ticket className="w-4 h-4" />
                     )}
-                    <span>{isRegistering ? "Registering..." : `Register Now (${event.entryFee})`}</span>
+                    <span>
+                      {isRegistering
+                        ? "Processing..."
+                        : event.isFree
+                          ? "Register for Free"
+                          : `Pay & Register (${event.entryFee})`}
+                    </span>
                   </Button>
 
                   {registerError && (

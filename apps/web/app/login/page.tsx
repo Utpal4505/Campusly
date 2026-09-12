@@ -21,6 +21,10 @@ import {
   User,
   Calendar,
   AlertCircle,
+  KeyRound,
+  RotateCcw,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 export default function LoginPage() {
@@ -28,12 +32,16 @@ export default function LoginPage() {
   const { setUserName, setInterests } = useCampusStore();
 
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [step, setStep] = useState<"credentials" | "otp">("credentials");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Check URL query parameters for ?mode=register
   useEffect(() => {
@@ -45,6 +53,15 @@ export default function LoginPage() {
     }
   }, []);
 
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -55,13 +72,13 @@ export default function LoginPage() {
         const studentName = name.trim() || email.split("@")[0] || "Student";
         await authClient.signUp(email, password, studentName);
         try {
-          const profile = await authClient.getMe();
-          setUserName(profile.name);
-        } catch {
-          setUserName(studentName);
+          await authClient.sendVerificationOTP(email);
+        } catch (otpErr) {
+          console.warn("OTP dispatch warning:", otpErr);
         }
-        // Direct new registrants straight to interest onboarding
-        router.push("/onboarding");
+        setStep("otp");
+        setOtpSuccessMessage(`Verification code sent to ${email}`);
+        setResendCooldown(60);
       } else {
         await authClient.signIn(email, password);
         try {
@@ -85,6 +102,57 @@ export default function LoginPage() {
             : "Invalid campus email or password.")
       );
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp.trim() || otp.trim().length !== 6) {
+      setError("Please enter the 6-digit verification code.");
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authClient.verifyEmailOTP(email, otp.trim());
+      const studentName = name.trim() || email.split("@")[0] || "Student";
+      setUserName(studentName);
+      router.push("/onboarding");
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Invalid or expired verification code. Please check and try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authClient.sendVerificationOTP(email);
+      setOtpSuccessMessage(`New verification code sent to ${email}`);
+      setResendCooldown(60);
+    } catch (err: any) {
+      setError(err?.message || "Failed to resend code. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authClient.signInSocial("google");
+    } catch (err: any) {
+      setError(
+        err?.message || "Failed to initiate Google sign-in. Please try again."
+      );
       setIsLoading(false);
     }
   };
@@ -186,140 +254,232 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleAuthSubmit} className="space-y-4">
-            
-            {/* Full Name Field (Register Mode Only) */}
-            {mode === "register" && (
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1.5">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          {step === "otp" ? (
+            <div className="p-6 rounded-2xl border border-border/80 bg-card shadow-lg animate-in fade-in zoom-in-95 duration-200">
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("credentials");
+                  setError(null);
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground mb-4 transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Change Email / Back</span>
+              </button>
+
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                <KeyRound className="w-6 h-6" />
+              </div>
+
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
+                Verify your campus email
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1 mb-5">
+                We sent a 6-digit verification code to <span className="font-semibold text-foreground">{email}</span>
+              </p>
+
+              {otpSuccessMessage && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>{otpSuccessMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1.5">
+                    6-Digit Verification Code
+                  </label>
                   <input
                     type="text"
                     required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Alex Morgan"
-                    className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
+                    maxLength={6}
+                    autoFocus
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="123456"
+                    className="w-full h-12 text-center text-xl tracking-[0.5em] font-mono bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground transition-all"
                   />
                 </div>
-              </div>
-            )}
 
-            {/* Email Field */}
-            <div>
-              <label className="block text-xs font-semibold text-foreground mb-1.5">
-                Campus Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="student@university.edu"
-                  className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
-                />
-              </div>
-            </div>
+                <Button
+                  type="submit"
+                  disabled={isLoading || otp.length < 6}
+                  className="w-full h-11 rounded-xl text-xs sm:text-sm font-bold gap-2 shadow-xs cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verifying code...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Verify & Complete Registration</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
 
-            {/* Password Field */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-foreground">
-                  Password
-                </label>
-                {mode === "login" && (
-                  <span className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-                    Forgot?
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full h-11 pl-10 pr-10 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
-                />
+              <div className="mt-5 pt-4 border-t border-border/60 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Didn&apos;t get the code?</span>
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-1"
-                  title={showPassword ? "Hide password" : "Show password"}
+                  disabled={resendCooldown > 0 || isLoading}
+                  onClick={handleResendOtp}
+                  className={`font-semibold cursor-pointer transition-colors ${
+                    resendCooldown > 0
+                      ? "text-muted-foreground cursor-not-allowed"
+                      : "text-primary hover:underline"
+                  }`}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
                 </button>
               </div>
+
+              <p className="text-[11px] text-muted-foreground/70 text-center mt-4">
+                ⏱️ Codes expire in 10 minutes. For local development, check your terminal/API console.
+              </p>
             </div>
+          ) : (
+            <>
+              {/* Form */}
+              <form onSubmit={handleAuthSubmit} className="space-y-4">
+                
+                {/* Full Name Field (Register Mode Only) */}
+                {mode === "register" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Alex Morgan"
+                        className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-11 rounded-xl text-xs sm:text-sm font-bold gap-2 shadow-xs cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 mt-1 transition-all"
-            >
-              {isLoading ? (
-                <span>
-                  {mode === "register" ? "Creating account..." : "Logging in..."}
+                {/* Email Field */}
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1.5">
+                    Campus Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="student@university.edu"
+                      className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-foreground">
+                      Password
+                    </label>
+                    {mode === "login" && (
+                      <span className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                        Forgot?
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full h-11 pl-10 pr-10 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-1"
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-11 rounded-xl text-xs sm:text-sm font-bold gap-2 shadow-xs cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 mt-1 transition-all"
+                >
+                  {isLoading ? (
+                    <span>
+                      {mode === "register" ? "Creating account..." : "Logging in..."}
+                    </span>
+                  ) : (
+                    <>
+                      <span>{mode === "register" ? "Create Account" : "Log in"}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              </form>
+
+              {/* Clean Divider */}
+              <div className="relative flex items-center justify-center my-5">
+                <div className="border-t border-border/60 w-full" />
+                <span className="bg-background px-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider shrink-0">
+                  or continue with
                 </span>
-              ) : (
-                <>
-                  <span>{mode === "register" ? "Create Account" : "Log in"}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </form>
+              </div>
 
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-5">
-            <div className="border-t border-border/60 w-full" />
-            <span className="bg-background px-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider shrink-0">
-              or continue with
-            </span>
-          </div>
-
-          {/* Continue with Google */}
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isLoading}
-            onClick={() => handleFastTrack("Utpal", "utpal.google@lpu.edu", ["AI", "Web Dev", "Hackathons"])}
-            className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold gap-2.5 border-border/80 bg-card hover:bg-muted/50 text-foreground cursor-pointer shadow-2xs transition-all"
-          >
-            {/* Google Multi-Color SVG Icon */}
-            <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            <span>Continue with Google</span>
-          </Button>
+              {/* Continue with Google */}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isLoading}
+                onClick={handleGoogleSignIn}
+                className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold gap-2.5 border-border/80 bg-card hover:bg-muted/50 text-foreground cursor-pointer shadow-2xs transition-all"
+              >
+                {/* Google Multi-Color SVG Icon */}
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                  />
+                </svg>
+                <span>Continue with Google</span>
+              </Button>
+            </>
+          )}
 
           {/* Fast-Track 1-Click Demo Logins for Judges & Reviewers */}
           <div className="mt-5 p-3.5 rounded-2xl border border-border/70 bg-muted/25 dark:bg-muted/10">

@@ -51,12 +51,6 @@ export default function Navbar() {
         {/* Right 32px Action Group */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-lg"
-          >
-            Log in
-          </Link>
           <Link href="/onboarding">
             <Button size="sm" className="h-8 rounded-lg px-3.5 text-xs font-semibold shadow-xs cursor-pointer">
               Get Started

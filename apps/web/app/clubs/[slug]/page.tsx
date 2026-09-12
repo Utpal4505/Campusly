@@ -354,14 +354,22 @@ const clubsData: Record<string, ClubData> = {
   },
 };
 
+const CLUB_ID_ALIASES: Record<string, string> = {
+  "seed-club-2": "ai-robotics-society",
+  "seed-club-3": "design-guild",
+};
+
 export default function ClubDetailPage() {
   const params = useParams();
   const rawSlug = (params?.slug as string) || "ai-robotics-society";
   const slug = rawSlug.toLowerCase();
+  const resolvedKey = CLUB_ID_ALIASES[slug] || slug;
 
   const { userName } = useCampusStore();
 
-  const club: ClubData = clubsData[slug] || {
+  const club: ClubData =
+    clubsData[resolvedKey] ||
+    clubsData[slug] || {
     name: rawSlug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
     badge: "Official Campus Student Organization",
     category: "Technology · Innovation · Community",

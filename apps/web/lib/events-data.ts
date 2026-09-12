@@ -357,8 +357,16 @@ export const LPU_EVENTS: Record<string, CampusEvent> = {
 
 export const LPU_EVENTS_LIST: CampusEvent[] = Object.values(LPU_EVENTS);
 
+const EVENT_ID_ALIASES: Record<string, string> = {
+  "seed-event-1": "genai-hackathon",
+  "seed-event-2": "robotics-challenge",
+  "seed-event-3": "design-jam",
+  "seed-event-4": "unipolis-fest",
+};
+
 export function getEventBySlug(slug: string): CampusEvent {
-  const found = LPU_EVENTS[slug];
+  const resolved = EVENT_ID_ALIASES[slug] || slug;
+  const found = LPU_EVENTS[resolved];
   if (found) return found;
   return LPU_EVENTS["genai-hackathon"] as CampusEvent;
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
+import { authClient } from "@/lib/auth";
 import {
   ArrowLeft,
   ArrowRight,
@@ -17,52 +18,106 @@ import {
   EyeOff,
   ShieldCheck,
   Zap,
-  Users,
+  User,
   Calendar,
-  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const { setUserName, setInterests } = useCampusStore();
 
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Check URL query parameters for ?mode=register
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mode") === "register") {
+        setMode("register");
+      }
+    }
+  }, []);
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    const firstPart = email ? (email.split("@")[0] ?? "Utpal") : "Utpal";
-    const extractedName = firstPart.replace(/[._]/g, " ");
-    const formattedName =
-      extractedName.charAt(0).toUpperCase() + extractedName.slice(1);
+    try {
+      if (mode === "register") {
+        const studentName = name.trim() || email.split("@")[0] || "Student";
+        await authClient.signUp(email, password, studentName);
+        try {
+          const profile = await authClient.getMe();
+          setUserName(profile.name);
+        } catch {
+          setUserName(studentName);
+        }
+        // Direct new registrants straight to interest onboarding
+        router.push("/onboarding");
+      } else {
+        await authClient.signIn(email, password);
+        const profile = await authClient.getMe();
+        setUserName(profile.name);
 
-    setUserName(formattedName || "Utpal");
-
-    setTimeout(() => {
-      router.push("/feed");
-    }, 500);
+        if (profile.interests && profile.interests.length > 0) {
+          setInterests(profile.interests.map((i) => i.name));
+          router.push("/feed");
+        } else {
+          router.push("/onboarding");
+        }
+      }
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          (mode === "register"
+            ? "Registration failed. Please check your credentials."
+            : "Invalid campus email or password.")
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  const handleFastTrack = async (
+    demoName: string,
+    demoEmail: string,
+    roleInterests: string[]
+  ) => {
     setIsLoading(true);
-    setUserName("Utpal (Google)");
-    setInterests(["AI", "Web Dev", "Hackathons"]);
-    setTimeout(() => {
-      router.push("/feed");
-    }, 500);
-  };
+    setError(null);
+    const demoPassword = "DemoPassword123!";
 
-  const handleFastTrack = (name: string, roleInterests: string[]) => {
-    setIsLoading(true);
-    setUserName(name);
-    setInterests(roleInterests);
-    setTimeout(() => {
+    try {
+      try {
+        await authClient.signIn(demoEmail, demoPassword);
+      } catch {
+        // Create demo account on the fly if not already registered in local DB
+        await authClient.signUp(demoEmail, demoPassword, demoName);
+      }
+
+      const profile = await authClient.getMe();
+      setUserName(profile.name || demoName);
+      if (profile.interests && profile.interests.length > 0) {
+        setInterests(profile.interests.map((i) => i.name));
+      } else {
+        setInterests(roleInterests);
+      }
       router.push("/feed");
-    }, 400);
+    } catch {
+      setUserName(demoName);
+      setInterests(roleInterests);
+      router.push("/feed");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -108,17 +163,49 @@ export default function LoginPage() {
           {/* Welcome Typography */}
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <span>Welcome back</span>
-              <span className="inline-block animate-bounce duration-1000">👋</span>
+              <span>{mode === "register" ? "Create account" : "Welcome back"}</span>
+              <span className="inline-block animate-bounce duration-1000">
+                {mode === "register" ? "🚀" : "👋"}
+              </span>
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 leading-relaxed">
-              Continue your campus journey · Connect with student builders, hackathons, and clubs.
+              {mode === "register"
+                ? "Join student builders, find hackathon teammates, and discover campus clubs."
+                : "Continue your campus journey · Connect with student builders, hackathons, and clubs."}
             </p>
           </div>
 
+          {/* Error Banner */}
+          {error && (
+            <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs font-medium flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
             
+            {/* Full Name Field (Register Mode Only) */}
+            {mode === "register" && (
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Alex Morgan"
+                    className="w-full h-11 pl-10 pr-3 text-xs sm:text-sm bg-muted/40 rounded-xl border border-border/70 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground placeholder:text-muted-foreground/60 transition-all"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Email Field */}
             <div>
               <label className="block text-xs font-semibold text-foreground mb-1.5">
@@ -143,9 +230,11 @@ export default function LoginPage() {
                 <label className="block text-xs font-semibold text-foreground">
                   Password
                 </label>
-                <span className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-                  Forgot?
-                </span>
+                {mode === "login" && (
+                  <span className="text-[11px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                    Forgot?
+                  </span>
+                )}
               </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -179,10 +268,12 @@ export default function LoginPage() {
               className="w-full h-11 rounded-xl text-xs sm:text-sm font-bold gap-2 shadow-xs cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 mt-1 transition-all"
             >
               {isLoading ? (
-                <span>Logging in...</span>
+                <span>
+                  {mode === "register" ? "Creating account..." : "Logging in..."}
+                </span>
               ) : (
                 <>
-                  <span>Log in</span>
+                  <span>{mode === "register" ? "Create Account" : "Log in"}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -202,7 +293,7 @@ export default function LoginPage() {
             type="button"
             variant="outline"
             disabled={isLoading}
-            onClick={handleGoogleLogin}
+            onClick={() => handleFastTrack("Utpal", "utpal.google@lpu.edu", ["AI", "Web Dev", "Hackathons"])}
             className="w-full h-11 rounded-xl text-xs sm:text-sm font-semibold gap-2.5 border-border/80 bg-card hover:bg-muted/50 text-foreground cursor-pointer shadow-2xs transition-all"
           >
             {/* Google Multi-Color SVG Icon */}
@@ -242,7 +333,13 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => handleFastTrack("Rahul Sharma", ["AI", "Web Dev", "Python"])}
+                onClick={() =>
+                  handleFastTrack(
+                    "Rahul Sharma",
+                    "rahul.sharma@lpu.edu",
+                    ["AI", "Web Dev", "Python"]
+                  )
+                }
                 className="p-2.5 rounded-xl border border-border/70 bg-card hover:border-primary flex items-center gap-2 text-left transition-all cursor-pointer shadow-2xs group"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden border border-border/70 shrink-0 bg-muted/20">
@@ -264,7 +361,13 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => handleFastTrack("Ananya Singh", ["Design", "UI/UX", "Startups"])}
+                onClick={() =>
+                  handleFastTrack(
+                    "Ananya Singh",
+                    "ananya.singh@lpu.edu",
+                    ["Design", "UI/UX", "Startups"]
+                  )
+                }
                 className="p-2.5 rounded-xl border border-border/70 bg-card hover:border-primary flex items-center gap-2 text-left transition-all cursor-pointer shadow-2xs group"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden border border-border/70 shrink-0 bg-muted/20">
@@ -288,13 +391,35 @@ export default function LoginPage() {
 
           {/* Footer Switcher */}
           <div className="mt-6 pt-5 border-t border-border/60 text-center text-xs text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/onboarding"
-              className="font-semibold text-primary hover:underline transition-colors ml-1"
-            >
-              Create account →
-            </Link>
+            {mode === "login" ? (
+              <>
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("register");
+                    setError(null);
+                  }}
+                  className="font-semibold text-primary hover:underline transition-colors ml-1 cursor-pointer"
+                >
+                  Create account →
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("login");
+                    setError(null);
+                  }}
+                  className="font-semibold text-primary hover:underline transition-colors ml-1 cursor-pointer"
+                >
+                  Log in →
+                </button>
+              </>
+            )}
           </div>
 
         </div>
@@ -308,8 +433,7 @@ export default function LoginPage() {
       </div>
 
       {/* ===================================================================
-          RIGHT COLUMN: Dynamic Campus Showcase Panel (Linear / Supabase Style)
-          Eliminates dead space, adds depth, warmth, and student proof
+          RIGHT COLUMN: Dynamic Campus Showcase Panel
       =================================================================== */}
       <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-between p-10 xl:p-14 bg-muted/20 dark:bg-muted/10 border-l border-border/60 relative overflow-hidden">
         

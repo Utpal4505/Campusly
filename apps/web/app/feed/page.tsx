@@ -1,31 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
+import { authClient } from "@/lib/auth";
+import type { FeedItem as BackendFeedItem, FeedResponse } from "@repo/schemas";
 import {
   Calendar,
-  MapPin,
-  Clock,
   ArrowRight,
   Search,
-  SlidersHorizontal,
   Plus,
-  Building2,
-  Code2,
   CheckCheck,
-  Flame,
-  MessageSquare,
   Sparkles,
-  Users,
   X,
   RotateCcw,
   Bookmark,
   Trophy,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 interface FeedItem {
@@ -42,93 +37,152 @@ interface FeedItem {
   actionLabel: string;
   actionDoneLabel: string;
   actionHref?: string;
+  month?: string;
+  day?: string;
+  attribution?: string;
 }
 
-const defaultFeedData: FeedItem[] = [
-  {
-    id: "genai-hack",
-    category: "Hackathon",
-    type: "hackathons",
-    title: "GenAI Hackathon 2026",
-    statusTag: "Tomorrow · 6:00 PM",
-    badgeColor: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60",
-    meta: "Oct 18–20 · Main Auditorium · 48h Sprint",
-    description:
-      "Build production-grade AI agents and tools. 3 campus teams are actively looking for frontend & UI teammates.",
-    tags: ["LLMs", "FastAPI", "Prize: $5,000", "2 spots open"],
-    actionLabel: "View Event & Register",
-    actionDoneLabel: "Registered ✓",
-    actionHref: "/events/genai-hackathon",
-  },
-  {
-    id: "ai-club",
-    category: "Club",
-    type: "clubs",
-    title: "AI & Robotics Society",
-    statusTag: "Recruiting Members",
-    badgeColor: "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60",
-    meta: "Meets Thu 6:00 PM · CS Hall 3 · 140+ Active Members",
-    description:
-      "Campus premier machine learning organization. Weekly paper discussions, GPU cluster access, and hack night labs.",
-    tags: ["Weekly Workshops", "GPU Cluster Access", "Recruiting"],
-    actionLabel: "View Club & Join",
-    actionDoneLabel: "Member Joined ✓",
-    actionHref: "/clubs/ai-robotics-society",
-  },
-  {
-    id: "design-guild",
-    category: "Club",
-    type: "clubs",
-    title: "Design & Build Guild",
-    statusTag: "Recruiting Fall Cohort",
-    badgeColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/60",
-    meta: "Meets Tue 5:30 PM · Design Studio B · 95+ Active Members",
-    description:
-      "Uniting UI/UX designers and frontend builders. Weekly Figma teardowns, design system workshops, and portfolio reviews.",
-    tags: ["UI/UX", "Figma", "Design Systems", "Recruiting"],
-    actionLabel: "View Club & Join",
-    actionDoneLabel: "Member Joined ✓",
-    actionHref: "/clubs/design-guild",
-  },
-  {
-    id: "rahul-sharma",
-    category: "Teammate",
-    type: "teammates",
-    title: "Rahul Sharma — AI / Backend",
-    statusTag: "Seeking Frontend Peer",
-    avatar: "RS",
-    badgeColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-900/60",
-    meta: "3rd Year CS · FastAPI, PyTorch, LangChain",
-    description:
-      "“Building an autonomous research agent for GenAI Hackathon. Looking for a frontend/Next.js peer to team up!”",
-    tags: ["PyTorch", "FastAPI", "LangChain", "Hackathon Teammate"],
-    actionLabel: "Connect & Team Up",
-    actionDoneLabel: "Invite Sent ✓",
-    actionHref: "/people/rahul-sharma",
-  },
-  {
-    id: "resume-analyzer",
-    category: "Project",
-    type: "projects",
-    title: "AI Resume Analyzer",
-    statusTag: "1 Spot Open",
-    badgeColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/60",
-    meta: "Open Source Campus Project · 3/4 Team Members Onboard",
-    description:
-      "Developing an open-source ATS scoring and career assistant for campus placements. Seeking 1 backend/API engineer.",
-    tags: ["Next.js", "Python", "Open Source", "Placement Prep"],
-    actionLabel: "Apply to Join Project",
-    actionDoneLabel: "Application Sent ✓",
-  },
-];
+function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
+  if (raw.type === "event") {
+    const eventDate = raw.metadata?.date ? new Date(raw.metadata.date) : null;
+    const dateMonth = eventDate
+      ? eventDate.toLocaleDateString("en-US", { month: "short" }).toUpperCase()
+      : "OCT";
+    const dateDay = eventDate ? String(eventDate.getDate()) : "20";
+
+    const metaParts = [
+      raw.metadata?.date
+        ? new Date(raw.metadata.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : null,
+      raw.metadata?.location || null,
+      raw.metadata?.registrationCount !== undefined
+        ? `${raw.metadata.registrationCount} registered`
+        : null,
+    ].filter(Boolean);
+
+    return {
+      id: raw.id,
+      category: "Hackathon",
+      type: "hackathons",
+      title: raw.title,
+      badgeColor:
+        "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60",
+      statusTag: raw.metadata?.date
+        ? new Date(raw.metadata.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : "Upcoming Event",
+      meta: metaParts.join(" · "),
+      description: raw.description || "Campus student event.",
+      tags: raw.interests ? raw.interests.map((i) => i.name) : [],
+      actionLabel: "View Event & Register",
+      actionDoneLabel: "Registered ✓",
+      actionHref: `/events/${raw.id}`,
+      month: dateMonth,
+      day: dateDay,
+      attribution:
+        raw.matchedInterests && raw.matchedInterests.length > 0
+          ? `Because you're interested in ${raw.matchedInterests.join(", ")}`
+          : undefined,
+    };
+  } else {
+    // Club
+    const memberCount = raw.metadata?.memberCount ?? 0;
+    const metaParts = [
+      raw.metadata?.creatorName
+        ? `Led by ${raw.metadata.creatorName}`
+        : "Official Campus Club",
+      memberCount > 0 ? `${memberCount} Members` : "Recruiting New Members",
+    ].filter(Boolean);
+
+    return {
+      id: raw.id,
+      category: "Club",
+      type: "clubs",
+      title: raw.title,
+      badgeColor:
+        "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60",
+      statusTag:
+        memberCount > 0 ? `${memberCount} Members` : "Recruiting Members",
+      meta: metaParts.join(" · "),
+      description: raw.description || "Campus student organization.",
+      tags: raw.interests ? raw.interests.map((i) => i.name) : [],
+      actionLabel: "View Club & Join",
+      actionDoneLabel: "Member Joined ✓",
+      actionHref: `/clubs/${raw.id}`,
+      attribution:
+        raw.matchedInterests && raw.matchedInterests.length > 0
+          ? `Because you're interested in ${raw.matchedInterests.join(", ")}`
+          : undefined,
+    };
+  }
+}
 
 export default function FeedPage() {
-  const { userName, interests, customPosts, setCreateModalOpen, setEditInterestsOpen } = useCampusStore();
-  const [activeTab, setActiveTab] = useState<"all" | "hackathons" | "clubs" | "teammates" | "projects">("all");
+  const {
+    userName,
+    interests,
+    customPosts,
+    setCreateModalOpen,
+    setEditInterestsOpen,
+  } = useCampusStore();
+
+  const [backendFeedItems, setBackendFeedItems] = useState<FeedItem[]>([]);
+  const [hasPersonalizedResults, setHasPersonalizedResults] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeTab, setActiveTab] = useState<
+    "all" | "hackathons" | "clubs" | "teammates" | "projects"
+  >("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [interactedMap, setInteractedMap] = useState<Record<string, boolean>>({});
-
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
+
+  const fetchFeed = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res: FeedResponse = await authClient.getFeed();
+      const mapped = res.items.map(mapBackendItemToFeedItem);
+      setBackendFeedItems(mapped);
+      setHasPersonalizedResults(res.hasPersonalizedResults);
+    } catch (err: any) {
+      setError(
+        err?.message || "Failed to load feed opportunities. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFeed();
+
+    const handlePreferencesUpdated = () => {
+      fetchFeed();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener(
+        "campusly:preferences-updated",
+        handlePreferencesUpdated
+      );
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener(
+          "campusly:preferences-updated",
+          handlePreferencesUpdated
+        );
+      }
+    };
+  }, [fetchFeed]);
 
   const handleAction = (id: string) => {
     setInteractedMap((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -142,20 +196,24 @@ export default function FeedPage() {
   const userCustomFeedItems: FeedItem[] = customPosts.map((post) => {
     let category: "Hackathon" | "Club" | "Teammate" | "Project" = "Teammate";
     let type: "hackathons" | "clubs" | "teammates" | "projects" = "teammates";
-    let badgeColor = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+    let badgeColor =
+      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
 
     if (post.type === "events") {
       category = "Hackathon";
       type = "hackathons";
-      badgeColor = "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60";
+      badgeColor =
+        "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-200/80 dark:border-blue-900/60";
     } else if (post.type === "clubs") {
       category = "Club";
       type = "clubs";
-      badgeColor = "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60";
+      badgeColor =
+        "bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200/80 dark:border-purple-900/60";
     } else if (post.type === "projects") {
       category = "Project";
       type = "projects";
-      badgeColor = "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/60";
+      badgeColor =
+        "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200/80 dark:border-amber-900/60";
     }
 
     return {
@@ -175,12 +233,18 @@ export default function FeedPage() {
     };
   });
 
-  const allFeedItems = [...userCustomFeedItems, ...defaultFeedData];
+  const allFeedItems = [...userCustomFeedItems, ...backendFeedItems];
 
-  const hackathonsCount = allFeedItems.filter((i) => i.type === "hackathons").length;
+  const hackathonsCount = allFeedItems.filter(
+    (i) => i.type === "hackathons"
+  ).length;
   const clubsCount = allFeedItems.filter((i) => i.type === "clubs").length;
-  const teammatesCount = allFeedItems.filter((i) => i.type === "teammates").length;
-  const projectsCount = allFeedItems.filter((i) => i.type === "projects").length;
+  const teammatesCount = allFeedItems.filter(
+    (i) => i.type === "teammates"
+  ).length;
+  const projectsCount = allFeedItems.filter(
+    (i) => i.type === "projects"
+  ).length;
 
   const filteredItems = allFeedItems.filter((item) => {
     const matchesTab = activeTab === "all" || item.type === activeTab;
@@ -207,10 +271,14 @@ export default function FeedPage() {
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {allFeedItems.length} opportunities matched
+                {allFeedItems.length} opportunities available
               </span>
               <span className="text-border">•</span>
-              <span>Curated for your campus profile</span>
+              <span>
+                {hasPersonalizedResults
+                  ? "Personalized for your campus interests"
+                  : "Discovering campus opportunities"}
+              </span>
             </p>
           </div>
 
@@ -223,7 +291,9 @@ export default function FeedPage() {
           >
             <Sparkles className="w-3.5 h-3.5 text-primary group-hover:rotate-12 transition-transform" />
             <span className="font-semibold text-foreground text-xs">
-              {(interests.length > 0 ? interests : ["AI", "Web Dev", "Startups"]).slice(0, 3).join(", ")}
+              {(interests.length > 0 ? interests : ["Artificial Intelligence", "Web Development", "Startups"])
+                .slice(0, 3)
+                .join(", ")}
               {interests.length > 3 && ` +${interests.length - 3}`}
             </span>
             <span className="text-[11px] text-muted-foreground underline underline-offset-2 pl-0.5">
@@ -324,7 +394,11 @@ export default function FeedPage() {
               </span>
             </div>
             <Link href="/clubs/register">
-              <Button size="sm" variant="outline" className="h-7 text-xs font-semibold rounded-lg shrink-0 gap-1 cursor-pointer">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs font-semibold rounded-lg shrink-0 gap-1 cursor-pointer"
+              >
                 <span>Register Club</span>
                 <ArrowRight className="w-3 h-3" />
               </Button>
@@ -332,8 +406,35 @@ export default function FeedPage() {
           </div>
         )}
 
-        {/* Feed Cards List */}
-        {filteredItems.length > 0 ? (
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/25 text-destructive text-xs font-medium flex items-center justify-between gap-3 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={fetchFeed}
+              className="h-7 text-xs font-semibold cursor-pointer"
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="space-y-4 py-8">
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <span className="text-xs font-medium">
+                Curating personalized campus opportunities...
+              </span>
+            </div>
+          </div>
+        ) : filteredItems.length > 0 ? (
           <div className="space-y-4">
             {filteredItems.map((item) => {
               const isDone = !!interactedMap[item.id];
@@ -344,25 +445,51 @@ export default function FeedPage() {
                   key={item.id}
                   className="p-5 rounded-2xl border border-border/80 bg-card shadow-xs hover:border-primary/40 hover:shadow-md transition-all duration-200 group"
                 >
+                  {/* Subtle Personalization Attribution Tag */}
+                  {item.attribution && (
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary border border-primary/20 mb-3 animate-in fade-in">
+                      <Sparkles className="w-3 h-3 text-primary shrink-0" />
+                      <span>{item.attribution}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-start gap-3.5 sm:gap-4">
                     {/* Visual Anchor */}
                     {item.category === "Hackathon" ? (
                       <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex flex-col items-center justify-center shrink-0">
-                        <span className="text-[10px] uppercase font-bold tracking-wider leading-none">OCT</span>
-                        <span className="text-base font-extrabold leading-none mt-1">18</span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider leading-none">
+                          {item.month || "OCT"}
+                        </span>
+                        <span className="text-base font-extrabold leading-none mt-1">
+                          {item.day || "20"}
+                        </span>
                       </div>
                     ) : item.category === "Club" ? (
                       <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl shrink-0">
-                        {item.id === "ai-club" ? "🤖" : item.id === "design-guild" ? "🎨" : "🏛️"}
+                        {item.title.toLowerCase().includes("ai") ||
+                        item.title.toLowerCase().includes("robot")
+                          ? "🤖"
+                          : item.title.toLowerCase().includes("design")
+                          ? "🎨"
+                          : item.title.toLowerCase().includes("ecell") ||
+                            item.title.toLowerCase().includes("startup")
+                          ? "🚀"
+                          : "🏛️"}
                       </div>
                     ) : item.category === "Teammate" ? (
                       <div className="relative w-12 h-12 rounded-xl border border-emerald-500/25 overflow-hidden shrink-0 bg-muted/20">
                         <img
-                          src={getAnimeAvatar(item.actionHref?.replace("/people/", "") || item.id, item.title)}
+                          src={getAnimeAvatar(
+                            item.actionHref?.replace("/people/", "") || item.id,
+                            item.title
+                          )}
                           alt={item.title}
                           className="w-full h-full object-cover"
                         />
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card" title="Active student" />
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card"
+                          title="Active student"
+                        />
                       </div>
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl shrink-0">
@@ -375,7 +502,9 @@ export default function FeedPage() {
                       {/* Category Badge + Status Tag + Bookmark */}
                       <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
                         <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-md border ${item.badgeColor}`}>
+                          <span
+                            className={`inline-flex items-center text-xs font-semibold px-2.5 py-0.5 rounded-md border ${item.badgeColor}`}
+                          >
                             {item.category}
                           </span>
                           <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
@@ -390,14 +519,21 @@ export default function FeedPage() {
                           className="text-muted-foreground hover:text-primary transition-colors p-1 rounded-md hover:bg-muted/60 cursor-pointer"
                           title={isSaved ? "Saved" : "Save opportunity"}
                         >
-                          <Bookmark className={`w-4 h-4 ${isSaved ? "fill-primary text-primary" : ""}`} />
+                          <Bookmark
+                            className={`w-4 h-4 ${
+                              isSaved ? "fill-primary text-primary" : ""
+                            }`}
+                          />
                         </button>
                       </div>
 
                       {/* Title */}
                       <h3 className="text-base sm:text-lg font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
                         {item.actionHref ? (
-                          <Link href={item.actionHref} className="hover:underline">
+                          <Link
+                            href={item.actionHref}
+                            className="hover:underline"
+                          >
                             {item.title}
                           </Link>
                         ) : (
@@ -419,8 +555,12 @@ export default function FeedPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3.5 border-t border-border/50">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {item.tags.map((tag) => {
-                            const isPrize = tag.toLowerCase().includes("prize");
-                            const isOpenSpot = tag.toLowerCase().includes("spot") || tag.toLowerCase().includes("recruiting");
+                            const isPrize = tag
+                              .toLowerCase()
+                              .includes("prize");
+                            const isOpenSpot =
+                              tag.toLowerCase().includes("spot") ||
+                              tag.toLowerCase().includes("recruiting");
                             return (
                               <span
                                 key={tag}
@@ -432,8 +572,12 @@ export default function FeedPage() {
                                     : "bg-muted text-muted-foreground border border-border/40"
                                 }`}
                               >
-                                {isPrize && <Trophy className="w-3 h-3 text-amber-500" />}
-                                {isOpenSpot && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
+                                {isPrize && (
+                                  <Trophy className="w-3 h-3 text-amber-500" />
+                                )}
+                                {isOpenSpot && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                )}
                                 {tag}
                               </span>
                             );
@@ -483,50 +627,50 @@ export default function FeedPage() {
               );
             })}
           </div>
-      ) : (
-        <div className="py-12 px-6 rounded-2xl border border-dashed border-border bg-card text-center max-w-md mx-auto my-6 animate-in fade-in">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 text-muted-foreground">
-            <Search className="w-5 h-5" />
-          </div>
-          <h3 className="text-sm font-semibold text-foreground mb-1">
-            No campus opportunities found
-          </h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            {searchQuery
-              ? `No results matching "${searchQuery}". Try a different keyword or reset filters.`
-              : "No posts in this category yet. Be the first to share an opportunity!"}
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            {searchQuery && (
+        ) : (
+          <div className="py-12 px-6 rounded-2xl border border-dashed border-border bg-card text-center max-w-md mx-auto my-6 animate-in fade-in">
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3 text-muted-foreground">
+              <Search className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              No campus opportunities found
+            </h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              {searchQuery
+                ? `No results matching "${searchQuery}". Try a different keyword or reset filters.`
+                : hasPersonalizedResults
+                ? "No matching opportunities in this category right now. Check back soon or create a post!"
+                : "No campus posts in this category yet. Be the first to share an opportunity!"}
+            </p>
+            <div className="flex items-center justify-center gap-2">
+              {searchQuery && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSearchQuery("")}
+                  className="h-8 text-xs rounded-lg gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Clear Search
+                </Button>
+              )}
               <Button
                 size="sm"
-                variant="outline"
-                onClick={() => setSearchQuery("")}
-                className="h-8 text-xs rounded-lg gap-1.5 cursor-pointer"
+                onClick={() => setCreateModalOpen(true)}
+                className="h-8 text-xs rounded-lg gap-1.5 font-semibold cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Clear Search
+                <Plus className="w-3.5 h-3.5" />
+                Create Post
               </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={() => setCreateModalOpen(true)}
-              className="h-8 text-xs rounded-lg gap-1.5 font-semibold cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Create Post
-            </Button>
+            </div>
           </div>
-        </div>
-      )}
-
+        )}
       </main>
 
       {/* Footer */}
       <footer className="w-full py-6 text-center text-xs text-muted-foreground border-t border-border/40 mt-12 bg-muted/20">
         Campusly • Curated campus network feed
       </footer>
-
     </div>
   );
 }

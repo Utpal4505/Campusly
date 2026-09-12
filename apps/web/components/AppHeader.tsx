@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
+import { authClient } from "@/lib/auth";
 import {
   Sparkles,
   Users,
@@ -17,7 +19,34 @@ import {
 
 export default function AppHeader() {
   const pathname = usePathname();
-  const { userName, setCreateModalOpen, setEditInterestsOpen } = useCampusStore();
+  const {
+    userName,
+    setUserName,
+    setInterests,
+    setCreateModalOpen,
+    setEditInterestsOpen,
+  } = useCampusStore();
+
+  useEffect(() => {
+    let isMounted = true;
+    authClient
+      .getMe()
+      .then((profile) => {
+        if (isMounted && profile?.name) {
+          setUserName(profile.name);
+          if (profile.interests && profile.interests.length > 0) {
+            setInterests(profile.interests.map((i) => i.name));
+          }
+        }
+      })
+      .catch(() => {
+        // Unauthenticated or guest session — leave default store state
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setUserName, setInterests]);
 
   const navLinks = [
     { href: "/feed", label: "For You", icon: Sparkles },

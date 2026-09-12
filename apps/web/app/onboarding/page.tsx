@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useCampusStore } from "@/lib/store";
 import ThemeToggle from "@/components/ThemeToggle";
+import { authClient } from "@/lib/auth";
+import { getInterestEmoji } from "@/lib/interests";
 import {
   ArrowRight,
   ArrowLeft,
@@ -15,22 +17,9 @@ import {
   Hammer,
   Users,
   CalendarDays,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
-
-const INTEREST_OPTIONS = [
-  { id: "AI", label: "AI & Machine Learning", short: "AI", emoji: "🤖" },
-  { id: "Web Dev", label: "Web Development", short: "Web Dev", emoji: "💻" },
-  { id: "Startups", label: "Startups & VC", short: "Startups", emoji: "🚀" },
-  { id: "Design", label: "Design & UI/UX", short: "Design", emoji: "🎨" },
-  { id: "Cybersecurity", label: "Cybersecurity", short: "Cyber", emoji: "🔐" },
-  { id: "Mobile Dev", label: "Mobile Apps", short: "Mobile", emoji: "📱" },
-  { id: "Hardware", label: "Hardware & IoT", short: "Hardware", emoji: "⚡" },
-  { id: "Business", label: "Business & Finance", short: "Business", emoji: "📊" },
-  { id: "Sports", label: "Sports & Fitness", short: "Sports", emoji: "🏏" },
-  { id: "Game Dev", label: "Game Development", short: "Game Dev", emoji: "🎮" },
-  { id: "Research", label: "Academic Research", short: "Research", emoji: "🧪" },
-  { id: "Open Source", label: "Open Source", short: "Open Source", emoji: "🌐" },
-];
 
 const GOAL_OPTIONS = [
   {
@@ -69,29 +58,99 @@ const GOAL_OPTIONS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { interests, toggleInterest, goals, toggleGoal } = useCampusStore();
+  const {
+    interests,
+    interestIds,
+    toggleInterestItem,
+    setSelectedInterests,
+    goals,
+    toggleGoal,
+  } = useCampusStore();
+
+  const [availableInterests, setAvailableInterests] = useState<
+    Array<{ id: string; name: string; emoji: string }>
+  >([]);
+  const [isLoadingInterests, setIsLoadingInterests] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loadingStage, setLoadingStage] = useState(0);
 
-  // Transition stage timer
+  // Load real interests from backend and sync already saved user preferences
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([
+      authClient.getInterests().catch(() => []),
+      authClient.getMe().catch(() => null),
+    ]).then(([interestsList, profile]) => {
+      if (!isMounted) return;
+
+      if (interestsList && interestsList.length > 0) {
+        setAvailableInterests(
+          interestsList.map((item) => ({
+            id: item.id,
+            name: item.name,
+            emoji: getInterestEmoji(item.name),
+          }))
+        );
+      }
+
+      if (profile?.interests && profile.interests.length > 0) {
+        setSelectedInterests(profile.interests);
+      }
+
+      setIsLoadingInterests(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [setSelectedInterests]);
+
+  // Handle Step 3: save preferences to backend and progress stages
   useEffect(() => {
     if (step === 3) {
-      const stage1 = setTimeout(() => setLoadingStage(1), 400);
-      const stage2 = setTimeout(() => setLoadingStage(2), 900);
-      const stage3 = setTimeout(() => setLoadingStage(3), 1400);
-      const done = setTimeout(() => {
-        router.push("/feed");
-      }, 1900);
+      let isMounted = true;
+
+      const savePreferencesAndTransition = async () => {
+        try {
+          if (interestIds.length === 0) {
+            throw new Error("Please select at least 1 interest to continue.");
+          }
+
+          // Call PATCH /users/me/preferences with selected interest IDs
+          await authClient.updatePreferences(interestIds);
+
+          if (!isMounted) return;
+          setLoadingStage(1);
+          await new Promise((resolve) => setTimeout(resolve, 450));
+
+          if (!isMounted) return;
+          setLoadingStage(2);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          if (!isMounted) return;
+          setLoadingStage(3);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          if (!isMounted) return;
+          router.push("/feed");
+        } catch (err: any) {
+          if (!isMounted) return;
+          setSaveError(
+            err?.message || "Failed to save preferences. Please check your connection."
+          );
+          setStep(1); // Return to step 1 so user can retry
+        }
+      };
+
+      savePreferencesAndTransition();
 
       return () => {
-        clearTimeout(stage1);
-        clearTimeout(stage2);
-        clearTimeout(stage3);
-        clearTimeout(done);
+        isMounted = false;
       };
     }
-  }, [step, router]);
+  }, [step, interestIds, router]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
@@ -113,20 +172,20 @@ export default function OnboardingPage() {
             {step !== 3 && (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
-                <span
-                  className={`w-6 h-1.5 rounded-full transition-all ${
-                    step >= 1 ? "bg-primary" : "bg-muted"
-                  }`}
-                />
-                <span
-                  className={`w-6 h-1.5 rounded-full transition-all ${
-                    step >= 2 ? "bg-primary" : "bg-muted"
-                  }`}
-                />
-              </div>
-              <span className="text-xs font-semibold text-muted-foreground">
-                Step {step} of 2
-              </span>
+                  <span
+                    className={`w-6 h-1.5 rounded-full transition-all ${
+                      step >= 1 ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                  <span
+                    className={`w-6 h-1.5 rounded-full transition-all ${
+                      step >= 2 ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                </div>
+                <span className="text-xs font-semibold text-muted-foreground">
+                  Step {step} of 2
+                </span>
               </div>
             )}
           </div>
@@ -147,59 +206,79 @@ export default function OnboardingPage() {
                 Pick the things you actually care about. We&apos;ll use this to personalize your campus feed.
               </p>
 
-              {/* Grid of Interests */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 w-full mb-8">
-                {INTEREST_OPTIONS.map((item) => {
-                  const isSelected = interests.includes(item.id);
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => toggleInterest(item.id)}
-                      className={`group relative p-3.5 sm:p-4 rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer ${
-                        isSelected
-                          ? "border-primary bg-primary/[0.04] shadow-xs ring-1 ring-primary/20"
-                          : "border-border/70 bg-card hover:border-primary/40 hover:bg-muted/30"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-xl sm:text-2xl shrink-0">
-                          {item.emoji}
-                        </span>
-                        <span className="text-xs sm:text-sm font-semibold text-foreground">
-                          {item.label}
-                        </span>
-                      </div>
+              {/* Error Banner */}
+              {saveError && (
+                <div className="mb-6 w-full p-3.5 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs font-medium flex items-center justify-center gap-2 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{saveError}</span>
+                </div>
+              )}
 
-                      <div
-                        className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${
+              {/* Grid of Interests */}
+              {isLoadingInterests ? (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span className="text-xs">Loading campus interest tags...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 w-full mb-8 max-h-[460px] overflow-y-auto pr-1">
+                  {availableInterests.map((item) => {
+                    const isSelected = interestIds.includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() =>
+                          toggleInterestItem({ id: item.id, name: item.name })
+                        }
+                        className={`group relative p-3.5 sm:p-4 rounded-xl border text-left transition-all duration-150 flex items-center justify-between cursor-pointer ${
                           isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "border border-border/70 opacity-0 group-hover:opacity-60"
+                            ? "border-primary bg-primary/[0.04] shadow-xs ring-1 ring-primary/20"
+                            : "border-border/70 bg-card hover:border-primary/40 hover:bg-muted/30"
                         }`}
                       >
-                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                        <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                          <span className="text-xl sm:text-2xl shrink-0">
+                            {item.emoji}
+                          </span>
+                          <span className="text-xs sm:text-sm font-semibold text-foreground truncate">
+                            {item.name}
+                          </span>
+                        </div>
+
+                        <div
+                          className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 transition-all ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "border border-border/70 opacity-0 group-hover:opacity-60"
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Step 1 Footer */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full pt-4 border-t border-border/50">
                 <span className="text-xs font-medium text-muted-foreground">
-                  {interests.length === 0
+                  {interestIds.length === 0
                     ? "Pick at least 1 interest to continue"
-                    : `${interests.length} interest${
-                        interests.length > 1 ? "s" : ""
+                    : `${interestIds.length} interest${
+                        interestIds.length > 1 ? "s" : ""
                       } selected`}
                 </span>
 
                 <Button
                   size="lg"
-                  disabled={interests.length === 0}
-                  onClick={() => setStep(2)}
-                  className="rounded-xl px-7 gap-2 shadow-xs font-semibold w-full sm:w-auto"
+                  disabled={interestIds.length === 0 || isLoadingInterests}
+                  onClick={() => {
+                    setSaveError(null);
+                    setStep(2);
+                  }}
+                  className="rounded-xl px-7 gap-2 shadow-xs font-semibold w-full sm:w-auto cursor-pointer"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -246,7 +325,9 @@ export default function OnboardingPage() {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${item.bg}`}>
+                        <div
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center border ${item.bg}`}
+                        >
                           <Icon className={`w-4 h-4 ${item.color}`} />
                         </div>
                         <div
@@ -285,7 +366,7 @@ export default function OnboardingPage() {
                   size="lg"
                   disabled={goals.length === 0}
                   onClick={() => setStep(3)}
-                  className="rounded-xl px-7 gap-2 shadow-xs font-semibold w-full sm:w-auto"
+                  className="rounded-xl px-7 gap-2 shadow-xs font-semibold w-full sm:w-auto cursor-pointer"
                 >
                   Build My Campusly
                   <Sparkles className="w-4 h-4" />
@@ -319,9 +400,11 @@ export default function OnboardingPage() {
                     <span className="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center text-[10px] font-bold">
                       ✓
                     </span>
-                    Analyzing interests ({interests.slice(0, 2).join(", ")}...)
+                    Saving interests ({interests.slice(0, 2).join(", ")}...)
                   </span>
-                  <span className="text-emerald-600 font-semibold text-[11px]">Done</span>
+                  <span className="text-emerald-600 font-semibold text-[11px]">
+                    Saved
+                  </span>
                 </div>
 
                 <div

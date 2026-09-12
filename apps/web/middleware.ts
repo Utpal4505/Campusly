@@ -41,14 +41,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. If already authenticated and visiting /login or /register, fast-forward unless explicitly switching
-  const isAuthRoute = AUTH_ROUTES.includes(pathname);
-  if (isAuthRoute && isAuthenticated && !request.nextUrl.searchParams.has("switch")) {
-    const redirectParam = request.nextUrl.searchParams.get("redirect");
-    const target = redirectParam || "/feed";
-    return NextResponse.redirect(new URL(target, request.url));
-  }
-
   return NextResponse.next();
 }
 

@@ -56,8 +56,20 @@ export class AuthController {
 
     // Convert standard Response back to Express response
     webResponse.headers.forEach((value, key) => {
-      res.setHeader(key, value);
+      if (key.toLowerCase() !== 'set-cookie') {
+        res.setHeader(key, value);
+      }
     });
+
+    // Forward ALL Set-Cookie headers as an array to prevent Express from overwriting them
+    const setCookies =
+      typeof (webResponse.headers as any).getSetCookie === 'function'
+        ? (webResponse.headers as any).getSetCookie()
+        : [];
+
+    if (setCookies.length > 0) {
+      res.setHeader('set-cookie', setCookies);
+    }
     res.status(webResponse.status);
 
     const responseBody = await webResponse.text();

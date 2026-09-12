@@ -123,22 +123,6 @@ export default function Hero() {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/login">
-                <Button
-                  variant="outline"
-                  className="h-10 px-4.5 rounded-xl text-xs font-semibold border-border/80 bg-card hover:bg-muted/50 text-foreground cursor-pointer"
-                >
-                  Log In
-                </Button>
-              </Link>
-              <Link href="/feed">
-                <Button
-                  variant="ghost"
-                  className="h-10 px-3.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  Explore Feed
-                </Button>
-              </Link>
             </div>
 
             {/* Student Proof Badges */}

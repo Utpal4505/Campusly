@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import AppHeader from "@/components/AppHeader";
+import { useAuth } from "@/lib/auth-context";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
 import { authClient } from "@/lib/auth";
@@ -123,6 +125,9 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
 }
 
 export default function FeedPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
   const {
     userName,
     interests,
@@ -142,6 +147,12 @@ export default function FeedPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [interactedMap, setInteractedMap] = useState<Record<string, boolean>>({});
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace("/login?redirect=/feed");
+    }
+  }, [isAuthLoading, isAuthenticated, router]);
 
   const fetchFeed = useCallback(async () => {
     setIsLoading(true);
@@ -165,10 +176,14 @@ export default function FeedPage() {
   }, []);
 
   useEffect(() => {
-    fetchFeed();
+    if (isAuthenticated) {
+      fetchFeed();
+    }
 
     const handlePreferencesUpdated = () => {
-      fetchFeed();
+      if (isAuthenticated) {
+        fetchFeed();
+      }
     };
 
     if (typeof window !== "undefined") {
@@ -258,6 +273,18 @@ export default function FeedPage() {
       item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesTab && matchesSearch;
   });
+
+  if (isAuthLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
+        <AppHeader />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-xs font-medium">Checking authorization...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">

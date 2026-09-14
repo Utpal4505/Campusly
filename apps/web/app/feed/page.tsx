@@ -31,6 +31,8 @@ import {
   Check,
   SlidersHorizontal,
 } from "lucide-react";
+import ClubAvatar from "@/components/ClubAvatar";
+import { getEventCoverImage } from "@/lib/event-assets";
 
 interface FeedItem {
   id: string;
@@ -40,6 +42,8 @@ interface FeedItem {
   badgeColor: string;
   statusTag: string;
   avatar?: string;
+  coverImage?: string | null;
+  logo?: string | null;
   meta: string;
   description: string;
   tags: string[];
@@ -84,6 +88,7 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
       statusTag,
       meta: metaParts.join(" · "),
       description: raw.description || "Campus student event.",
+      coverImage: (raw.metadata as any)?.coverImage || null,
       tags: raw.interests ? raw.interests.map((i) => i.name) : [],
       actionLabel: "View Event & Register",
       actionDoneLabel: "Registered ✓",
@@ -116,6 +121,8 @@ function mapBackendItemToFeedItem(raw: BackendFeedItem): FeedItem {
         memberCount > 0 ? `${memberCount} Active Members` : "Recruiting Members",
       meta: metaParts.join(" · "),
       description: raw.description || "Campus student organization.",
+      logo: (raw.metadata as any)?.logo || null,
+      coverImage: (raw.metadata as any)?.coverImage || null,
       tags: raw.interests ? raw.interests.map((i) => i.name) : [],
       actionLabel: "View Club & Join",
       actionDoneLabel: "Member Joined ✓",
@@ -515,26 +522,26 @@ export default function FeedPage() {
                   <div className="flex items-start gap-4">
                     {/* Visual Anchor */}
                     {item.category === "Hackathon" ? (
-                      <div className="w-13 h-13 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex flex-col items-center justify-center shrink-0 shadow-inner">
-                        <span className="text-[10px] uppercase font-extrabold tracking-wider leading-none">
-                          {item.month || "OCT"}
-                        </span>
-                        <span className="text-lg font-black leading-none mt-1 text-foreground">
-                          {item.day || "20"}
-                        </span>
+                      <div className="relative w-13 h-13 rounded-2xl overflow-hidden bg-muted/40 shrink-0 border border-blue-500/30 shadow-xs">
+                        <img
+                          src={getEventCoverImage(item.title, item.id, item.coverImage)}
+                          alt={item.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col items-center justify-end pb-1">
+                          <span className="text-[9px] uppercase font-black tracking-wider text-white leading-none">
+                            {item.month || "OCT"} {item.day || "20"}
+                          </span>
+                        </div>
                       </div>
                     ) : item.category === "Club" ? (
-                      <div className="w-13 h-13 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl shrink-0 shadow-inner">
-                        {item.title.toLowerCase().includes("ai") ||
-                        item.title.toLowerCase().includes("robot")
-                          ? "🤖"
-                          : item.title.toLowerCase().includes("design")
-                          ? "🎨"
-                          : item.title.toLowerCase().includes("ecell") ||
-                            item.title.toLowerCase().includes("startup")
-                          ? "🚀"
-                          : "🏛️"}
-                      </div>
+                      <ClubAvatar
+                        clubName={item.title}
+                        clubId={item.id}
+                        customAvatarUrl={item.logo}
+                        size="md"
+                        className="w-13 h-13 rounded-2xl shrink-0"
+                      />
                     ) : item.category === "Teammate" ? (
                       <div className="relative w-13 h-13 rounded-2xl border border-emerald-500/25 overflow-hidden shrink-0 bg-muted/20">
                         <img

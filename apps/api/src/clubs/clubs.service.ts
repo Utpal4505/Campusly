@@ -41,6 +41,8 @@ export class ClubsService {
       id: club.id,
       name: club.name,
       description: club.description,
+      logo: club.logo,
+      coverImage: club.coverImage,
       creator: {
         id: club.creator.id,
         name: club.creator.name,
@@ -68,6 +70,8 @@ export class ClubsService {
       id: club.id,
       name: club.name,
       description: club.description,
+      logo: club.logo,
+      coverImage: club.coverImage,
       creator: {
         id: club.creator.id,
         name: club.creator.name,

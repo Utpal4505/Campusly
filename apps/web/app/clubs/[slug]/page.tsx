@@ -11,6 +11,7 @@ import { getAnimeAvatar } from "@/lib/avatars";
 import { authClient } from "@/lib/auth";
 import type { ClubDetail } from "@repo/schemas";
 import ClubAvatar from "@/components/ClubAvatar";
+import { getClubCoverImage, getClubLogo } from "@/lib/club-assets";
 
 import {
   ArrowLeft,
@@ -836,11 +837,15 @@ export default function ClubDetailPage() {
           ======================================================================= */
           <div>
             {/* High-Impact Hero Banner */}
-            <div
-              className={`w-full rounded-3xl bg-gradient-to-br ${club.gradient} p-6 sm:p-8 text-white relative overflow-hidden mb-8 border shadow-lg`}
-            >
-              {/* Subtle grid pattern background */}
-              <div className="absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-[size:20px_20px]" />
+            <div className="w-full rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden mb-8 border shadow-lg min-h-[260px] flex flex-col justify-between">
+              {/* Real High-Resolution Visual Cover Photo */}
+              <img
+                src={getClubCoverImage(club.name, liveClub?.id || rawSlug, (liveClub as any)?.coverImage)}
+                alt={club.name}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              {/* Dark ambient overlay for crisp text readability */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/65 to-black/35 backdrop-blur-[1px]" />
 
               <div className="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex items-start gap-4">
@@ -848,8 +853,9 @@ export default function ClubDetailPage() {
                   <ClubAvatar
                     clubName={club.name}
                     clubId={liveClub?.id || rawSlug}
+                    customAvatarUrl={(liveClub as any)?.logo}
                     size="lg"
-                    className="border-white/20 shadow-xl"
+                    className="border-white/20 shadow-xl ring-4 ring-white/15"
                   />
 
                   <div>

@@ -18,6 +18,7 @@ export const eventCardSchema = z.object({
       name: z.string(),
     })
   ),
+  coverImage: z.string().nullable().optional(),
   registrationCount: z.number(),
 });
 
@@ -38,6 +39,7 @@ export const createEventSchema = z.object({
   description: z.string().optional().nullable(),
   date: z.date().or(z.string()),
   location: z.string().optional().nullable(),
+  coverImage: z.string().optional().nullable(),
   price: z.number().optional(),
   currency: z.string().optional(),
   interestIds: z.array(z.string()).optional(),

@@ -107,6 +107,7 @@ async function syncLiveHackathons() {
         update: {
           title: src.name,
           description,
+          coverImage: src.banner_url || src.cover_img || null,
           date: new Date(src.starts_at),
           location,
           price: 0,
@@ -116,6 +117,7 @@ async function syncLiveHackathons() {
           id: eventId,
           title: src.name,
           description,
+          coverImage: src.banner_url || src.cover_img || null,
           date: new Date(src.starts_at),
           location,
           price: 0,

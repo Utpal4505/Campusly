@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getClubAvatarUrl, getClubTheme } from "@/lib/avatars";
+import { getClubLogo } from "@/lib/club-assets";
 
 interface ClubAvatarProps {
   clubName: string;
@@ -30,7 +31,7 @@ export default function ClubAvatar({
   const [hasError, setHasError] = useState(false);
   const theme = getClubTheme(clubName, interests);
   const avatarUrl =
-    customAvatarUrl || getClubAvatarUrl(clubName, clubId, interests);
+    customAvatarUrl || getClubLogo(clubName, clubId) || getClubAvatarUrl(clubName, clubId, interests);
 
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
 

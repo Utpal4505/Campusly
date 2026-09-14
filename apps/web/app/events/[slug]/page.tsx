@@ -30,6 +30,7 @@ import {
   Info,
   Loader2,
 } from "lucide-react";
+import { getEventCoverImage } from "@/lib/event-assets";
 
 export default function EventDetailPage() {
   const router = useRouter();
@@ -327,8 +328,15 @@ export default function EventDetailPage() {
         </div>
 
         {/* Hero Visual Banner */}
-        <div className={`w-full rounded-3xl bg-gradient-to-tr ${event.gradient} p-6 sm:p-8 flex flex-col justify-between text-white relative overflow-hidden mb-8 border shadow-sm`}>
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-[size:16px_16px]" />
+        <div className="w-full rounded-3xl p-6 sm:p-8 flex flex-col justify-between text-white relative overflow-hidden mb-8 border shadow-md min-h-[300px]">
+          {/* Real High-Resolution Visual Cover Photo */}
+          <img
+            src={getEventCoverImage(event.title, event.id, (liveEvent as any)?.coverImage, event.category)}
+            alt={event.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* High-contrast dark gradient overlay for optimal readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/30 backdrop-blur-[1px]" />
 
           <div className="relative z-10 flex items-center justify-between gap-3 mb-6 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md ${event.categoryBadge}`}>

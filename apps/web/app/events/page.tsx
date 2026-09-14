@@ -20,6 +20,7 @@ import {
   Ticket,
   Loader2,
 } from "lucide-react";
+import { getEventCoverImage } from "@/lib/event-assets";
 
 const ACCENT_STYLES: Record<string, {
   wash: string;
@@ -62,12 +63,14 @@ interface DisplayEvent {
   subtitle: string;
   venue: string;
   host: string;
+  coverImage?: string | null;
   date: string;
   monthDay: { month: string; day: string };
   time: string;
   tags: string[];
   spotsRemaining: number;
   prizePool: string;
+  price: number;
   isFree: boolean;
   entryFee: string;
   category: string;
@@ -112,6 +115,7 @@ export default function EventsDirectoryPage() {
             subtitle: event.description || "Official campus student event.",
             venue: event.location || "LPU Campus",
             host: event.creator?.name || "Campus Event Board",
+            coverImage: (event as any).coverImage || null,
             date: dateStr,
             monthDay: { month, day },
             time: timeStr,
@@ -258,36 +262,46 @@ export default function EventsDirectoryPage() {
           <div className="grid md:grid-cols-2 gap-5 mb-12">
             {filteredEvents.map((event) => {
               const accent = ACCENT_STYLES[event.accentColor] || ACCENT_STYLES.blue!;
+              const coverImg = getEventCoverImage(event.title, event.id, event.coverImage, event.category);
+
               return (
                 <div
                   key={event.id}
                   className="rounded-3xl border border-border/80 bg-card hover:border-primary/40 hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col justify-between group relative shadow-xs"
                 >
-                  {/* Smooth Ambient Glow Header (Clean pastel in light mode, luminous in dark mode) */}
-                  <div className={`absolute top-0 left-0 right-0 h-40 bg-gradient-to-b ${accent.wash} pointer-events-none`} />
+                  {/* Event Visual Cover Banner */}
+                  <div className="relative h-36 sm:h-40 w-full overflow-hidden bg-muted/40 shrink-0">
+                    <img
+                      src={coverImg}
+                      alt={event.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/30 to-black/60" />
 
-                  <div className="p-5 sm:p-6 relative z-10 flex-1 flex flex-col justify-between">
-                    <div>
-                      {/* Top Row: Category Pill + Prize / Spots Badge */}
-                      <div className="flex items-center justify-between gap-2 mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${accent.badge}`}>
-                            {event.category}
-                          </span>
-                          {event.spotsRemaining <= 20 && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60">
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                              {event.spotsRemaining} spots left
-                            </span>
-                          )}
-                        </div>
-
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60 flex items-center gap-1.5 shadow-2xs">
-                          <Trophy className="w-3 h-3 text-amber-500" />
-                          <span>{event.prizePool}</span>
+                    {/* Top Row floating badges on banner */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full backdrop-blur-md shadow-xs ${accent.badge}`}>
+                          {event.category}
                         </span>
+                        {event.spotsRemaining <= 20 && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/90 text-white backdrop-blur-md">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            {event.spotsRemaining} spots left
+                          </span>
+                        )}
                       </div>
 
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-black/70 text-amber-300 backdrop-blur-md border border-white/15 flex items-center gap-1.5 shadow-xs">
+                        <Trophy className="w-3 h-3 text-amber-400" />
+                        <span>{event.prizePool}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-5 sm:p-6 relative z-10 flex-1 flex flex-col justify-between pt-4">
+                    <div>
                       {/* Anchor: Date Tile + Title + Host */}
                       <div className="flex items-start gap-3.5 mb-3.5">
                         {/* Modern Date Tile (Crisp in Light and Dark Mode) */}

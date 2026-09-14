@@ -47,6 +47,7 @@ export class EventsService {
       description: event.description,
       date: event.date,
       location: event.location,
+      coverImage: event.coverImage,
       price: event.price ?? 0,
       currency: event.currency ?? 'INR',
       creator: {
@@ -78,6 +79,7 @@ export class EventsService {
       description: event.description,
       date: event.date,
       location: event.location,
+      coverImage: event.coverImage,
       price: event.price ?? 0,
       currency: event.currency ?? 'INR',
       creator: {

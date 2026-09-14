@@ -14,6 +14,8 @@ export const clubCardSchema = z.object({
       name: z.string(),
     })
   ),
+  logo: z.string().nullable().optional(),
+  coverImage: z.string().nullable().optional(),
   memberCount: z.number(),
 });
 
@@ -28,6 +30,8 @@ export type ClubDetail = z.infer<typeof clubDetailSchema>;
 export const createClubSchema = z.object({
   name: z.string().min(3, "Club name must be at least 3 characters"),
   description: z.string().optional().nullable(),
+  logo: z.string().optional().nullable(),
+  coverImage: z.string().optional().nullable(),
   interestIds: z.array(z.string()).optional(),
   interestNames: z.array(z.string()).optional(),
 });

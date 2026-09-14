@@ -118,6 +118,7 @@ export class FeedService {
           metadata: {
             date: event.date.toISOString(),
             location: event.location,
+            coverImage: event.coverImage,
             registrationCount: event._count.registrations,
             creatorName: event.creator.name,
           },
@@ -149,6 +150,8 @@ export class FeedService {
           matchedInterests,
           interests: mappedInterests,
           metadata: {
+            logo: club.logo,
+            coverImage: club.coverImage,
             memberCount: club._count.members,
             creatorName: club.creator.name,
           },

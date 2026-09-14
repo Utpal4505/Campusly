@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import ClubAvatar from "@/components/ClubAvatar";
 import { getClubTheme } from "@/lib/avatars";
+import { getClubCoverImage } from "@/lib/club-assets";
 
 
 const CLUB_CATEGORIES = [
@@ -196,44 +197,59 @@ export default function ClubsDirectoryPage() {
             {filteredClubs.map((club) => {
               const memberCount = club.memberCount ?? 0;
               const creatorName = club.creator?.name || "Campus Student Board";
+              const coverImg = getClubCoverImage(club.name, club.id, club.coverImage);
 
               return (
                 <div
                   key={club.id}
-                  className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs hover:border-primary/40 hover:shadow-md hover:bg-card/95 transition-all duration-200 flex flex-col justify-between group"
+                  className="rounded-3xl border border-border/80 bg-card overflow-hidden shadow-xs hover:border-primary/40 hover:shadow-md hover:bg-card/95 transition-all duration-200 flex flex-col justify-between group"
                 >
                   <div>
-                    {/* Top Anchor & Status Badge */}
-                    <div className="flex items-start justify-between gap-3 mb-3.5">
-                      <ClubAvatar
-                        clubName={club.name}
-                        clubId={club.id}
-                        interests={club.interests}
-                        size="md"
+                    {/* Top Cover Banner */}
+                    <div className="relative h-28 w-full overflow-hidden bg-muted/40">
+                      <img
+                        src={coverImg}
+                        alt={club.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
-
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/60">
-                        <Users className="w-3 h-3 text-purple-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                      <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20">
+                        <Users className="w-3 h-3 text-purple-300" />
                         <span>{memberCount > 0 ? `${memberCount} Members` : "Recruiting"}</span>
                       </span>
                     </div>
 
-                    {/* Club Title */}
-                    <h3 className="text-base font-bold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
-                      <Link href={`/clubs/${club.id}`} className="hover:underline">
-                        {club.name}
-                      </Link>
-                    </h3>
+                    <div className="p-5 pt-0">
+                      {/* Logo Emblem overlapping banner */}
+                      <div className="-mt-7 mb-3 flex items-end justify-between">
+                        <ClubAvatar
+                          clubName={club.name}
+                          clubId={club.id}
+                          customAvatarUrl={club.logo}
+                          interests={club.interests}
+                          size="md"
+                          className="ring-4 ring-card shadow-md"
+                        />
+                      </div>
 
-                    {/* Organizer Meta */}
-                    <p className="text-[11px] text-muted-foreground font-medium mb-2.5">
-                      Led by <span className="text-foreground/80 font-semibold">{creatorName}</span>
-                    </p>
+                      {/* Club Title */}
+                      <h3 className="text-base font-bold text-foreground mb-1 group-hover:text-primary transition-colors line-clamp-1">
+                        <Link href={`/clubs/${club.id}`} className="hover:underline">
+                          {club.name}
+                        </Link>
+                      </h3>
 
-                    {/* Description */}
-                    <p className="text-xs text-foreground/80 leading-relaxed mb-4 line-clamp-2">
-                      {club.description || "Student-led campus organization focused on collaborative innovation and skill development."}
-                    </p>
+                      {/* Organizer Meta */}
+                      <p className="text-[11px] text-muted-foreground font-medium mb-2.5">
+                        Led by <span className="text-foreground/80 font-semibold">{creatorName}</span>
+                      </p>
+
+                      {/* Description */}
+                      <p className="text-xs text-foreground/80 leading-relaxed mb-4 line-clamp-2">
+                        {club.description || "Student-led campus organization focused on collaborative innovation and skill development."}
+                      </p>
+                    </div>
                   </div>
 
                   <div>

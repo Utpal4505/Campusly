@@ -18,6 +18,8 @@ export const feedItemSchema = z.object({
   metadata: z.object({
     date: z.date().or(z.string()).optional(),
     location: z.string().nullable().optional(),
+    coverImage: z.string().nullable().optional(),
+    logo: z.string().nullable().optional(),
     registrationCount: z.number().optional(),
     memberCount: z.number().optional(),
     creatorName: z.string(),

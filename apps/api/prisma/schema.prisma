@@ -134,6 +134,7 @@ model Event {
   id            String              @id @default(cuid())
   title         String
   description   String?
+  coverImage    String?
   date          DateTime
   location      String?
   price         Int                 @default(0)
@@ -181,6 +182,8 @@ model Club {
   id          String         @id @default(cuid())
   name        String
   description String?
+  logo        String?
+  coverImage  String?
   creatorId   String
   creator     User           @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   members     ClubMember[]

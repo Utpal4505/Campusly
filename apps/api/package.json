@@ -24,7 +24,8 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "node --experimental-strip-types prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "events:sync": "node --experimental-strip-types src/events/sync-lpu-events.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

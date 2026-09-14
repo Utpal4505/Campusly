@@ -1,6 +1,27 @@
-import 'dotenv/config';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Robust env loading regardless of execution CWD
+const candidatePaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '..', '.env'),
+  path.resolve(__dirname, '../..', '.env'),
+  path.resolve(__dirname, '../../..', '.env'),
+];
+
+for (const p of candidatePaths) {
+  if (fs.existsSync(p)) {
+    dotenv.config({ path: p });
+    break;
+  }
+}
 
 const connectionString =
   process.env['DATABASE_URL'] ||
@@ -35,149 +56,424 @@ const CAMPUS_INTERESTS: string[] = [
   'Finance & Investing',
   'Fitness & Health',
   'Content Creation',
+  'Theatre & Drama',
+  'Social Welfare',
+  'Environmental Initiatives',
 ];
 
-const SEED_EVENTS = [
+const SEED_CLUBS = [
+  // Grassroots & Departmental Coding Chapters
   {
-    id: 'seed-event-1',
-    title: 'Campus Hackathon 2026',
+    id: 'seed-club-codingblocks',
+    name: 'Coding Blocks LPU Community',
     description:
-      'Annual 36-hour student hackathon. Build innovative AI, Web, and Mobile solutions with mentorship and sponsor prizes.',
-    date: new Date('2026-10-20T09:00:00Z'),
-    location: 'Main Auditorium, Block 34',
-    price: 199,
-    interestNames: [
-      'Artificial Intelligence',
-      'Web Development',
-      'Startups',
-    ],
+      'Grassroots student community focusing on C++, Java DSA bootcamps, weekly speed-coding sprints, and placement prep rounds in Block 34.',
+    interestNames: ['Competitive Programming', 'Web Development', 'Open Source'],
   },
   {
-    id: 'seed-event-2',
-    title: 'AI & Robotics Project Showcase',
+    id: 'seed-club-codingninjas',
+    name: 'Coding Ninjas LPU Student Chapter',
     description:
-      'Hands-on exhibition of autonomous bots, machine learning research projects, and embedded hardware demos.',
-    date: new Date('2026-10-25T14:00:00Z'),
-    location: 'Innovation Lab 3, Uni Central',
-    interestNames: [
-      'Artificial Intelligence',
-      'Robotics',
-      'Machine Learning',
-    ],
+      'Student-led campus chapter hosting beginner-friendly programming bootcamps, 12-hour mini-hacks, and peer-to-peer developer mentorship.',
+    interestNames: ['Web Development', 'App Development', 'Competitive Programming'],
   },
   {
-    id: 'seed-event-3',
-    title: 'UI/UX Design Sprint',
+    id: 'seed-club-gfg',
+    name: 'GeeksforGeeks (GFG) Student Chapter LPU',
     description:
-      'Interactive workshop on design thinking, Figma component architectures, and prototyping for real student products.',
-    date: new Date('2026-11-02T11:00:00Z'),
-    location: 'Design Studio A, Block 12',
-    interestNames: ['Design', 'UI/UX', 'Content Creation'],
-  },
-  {
-    id: 'seed-event-4',
-    title: 'Startup Pitch Night & Founder Mixer',
-    description:
-      'Campus founders pitch early-stage ideas to alumni mentors and student leaders. Networking and refreshments included.',
-    date: new Date('2026-11-10T17:30:00Z'),
-    location: 'Student Activity Center, Hall B',
-    interestNames: [
-      'Startups',
-      'Entrepreneurship',
-      'Finance & Investing',
-    ],
-  },
-  {
-    id: 'seed-event-5',
-    title: 'CTF Cybersecurity Bootcamp & Live War Games',
-    description:
-      '48-hour ethical hacking challenge. Penetration testing, cryptography puzzles, web vulnerability exploitation, and defense.',
-    date: new Date('2026-11-15T10:00:00Z'),
-    location: 'Cyber Defense Lab, Block 34',
-    interestNames: ['Cybersecurity', 'Cloud Computing', 'Open Source'],
-  },
-  {
-    id: 'seed-event-6',
-    title: 'Algorithmic Code Clash 2026',
-    description:
-      'Speed programming competition on advanced dynamic programming, graph theory, and algorithmic problem solving.',
-    date: new Date('2026-11-20T16:00:00Z'),
-    location: 'Online & Central Computing Lab 4',
+      'Official campus chapter organizing weekly algorithmic showdowns, DSA interview preparation workshops, and hackathons in Block 34.',
     interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
   },
   {
-    id: 'seed-event-7',
-    title: 'Flutter & React Native Mobile Hack Jam',
+    id: 'seed-club-codechef',
+    name: 'CodeChef Campus Chapter LPU',
     description:
-      'Build and publish cross-platform iOS & Android apps in a weekend. Industry mentor code reviews and prizes.',
-    date: new Date('2026-11-28T09:30:00Z'),
-    location: 'Mobile Innovation Suite, Block 28',
-    interestNames: ['App Development', 'Web Development', 'UI/UX'],
+      'Algorithmic programming society running live watch parties for Starters & Cook-Off contests, editorial breakdown sessions, and ICPC prep.',
+    interestNames: ['Competitive Programming', 'Data Science'],
   },
   {
-    id: 'seed-event-8',
-    title: 'Campus Esports Championship: Valorant & BGMI',
+    id: 'seed-club-girlscript',
+    name: 'GirlScript LPU Chapter',
     description:
-      'Inter-college gaming tournament with live casting, spectator arena, and ₹40,000 prize pool.',
-    date: new Date('2026-12-05T13:00:00Z'),
-    location: 'Indoor Sports Arena & Gaming Lounge',
-    price: 299,
-    interestNames: ['Gaming', 'Content Creation', 'Design'],
+      'Inclusive tech community empowering students through open-source contribution sprints, beginner-friendly hackathons, and tech mentorship.',
+    interestNames: ['Open Source', 'Web Development', 'Artificial Intelligence'],
   },
   {
-    id: 'seed-event-9',
+    id: 'seed-club-cybsec',
+    name: 'CybSec LPU / Null Chapter',
+    description:
+      'White-hat ethical hackers and infosec researchers. Hands-on CTF war games, bug bounty hunting, reverse engineering, and Cyberwar hackathons.',
+    interestNames: ['Cybersecurity', 'Cloud Computing', 'Blockchain'],
+  },
+  {
+    id: 'seed-club-risc',
+    name: 'RISC (Robotics & Intelligent Systems Community)',
+    description:
+      'Student robotics research collective building autonomous rovers, battle bots, drone navigation firmware, and hosting RoboWars in Innovation Studio.',
+    interestNames: ['Robotics', 'Artificial Intelligence', 'Machine Learning'],
+  },
+  {
+    id: 'seed-club-electech',
+    name: 'Club ElecTech (Hardware & IoT)',
+    description:
+      'Hardware and embedded electronics makers club working on Arduino, ESP32, Raspberry Pi, sensor telemetry, and smart campus automation.',
+    interestNames: ['Robotics', 'Cloud Computing'],
+  },
+
+  // University-Wide & Flagship Tech Chapters
+  {
+    id: 'seed-club-gdg',
+    name: 'GDG on Campus LPU (formerly GDSC)',
+    description:
+      'University chapter for student builders passionate about Google developer technologies, Android, Flutter, Cloud architectures, and the Solution Challenge.',
+    interestNames: ['Web Development', 'Cloud Computing', 'Artificial Intelligence', 'App Development'],
+  },
+  {
+    id: 'seed-club-ieee',
+    name: 'IEEE LPU Student Branch',
+    description:
+      'Preeminent technical student branch bridging academic research and industry through robotics symposiums, technical paper workshops, and IoT hackathons.',
+    interestNames: ['Robotics', 'Artificial Intelligence', 'Cybersecurity'],
+  },
+  {
+    id: 'seed-club-tatva',
+    name: 'Tatva Student Organization (DSW)',
+    description:
+      'Flagship DSW student organization known for organizing national-scale technical conventions, gaming summits, and the annual HackWave hackathon.',
+    interestNames: ['Startups', 'Web Development', 'Open Source'],
+  },
+  {
+    id: 'seed-club-aurora',
+    name: 'Aurora Student Organization',
+    description:
+      'High-energy tech and innovation group organizing sprint hackathons, Aurora Codefest, and hands-on software development bootcamps.',
+    interestNames: ['Competitive Programming', 'Web Development', 'UI/UX'],
+  },
+  {
+    id: 'seed-club-lscc',
+    name: 'LSCC (LPU SAEINDIA Collegiate Club)',
+    description:
+      'Automotive engineering and motorsport team designing, fabricating, and racing BAJA SAE all-terrain vehicles and Formula Student race cars.',
+    interestNames: ['Robotics', 'Fitness & Health'],
+  },
+
+  // Cultural, Media, Creative & Performing Arts
+  {
+    id: 'seed-club-natyamanch',
+    name: 'Natya Manch (DSW Theatre Society)',
+    description:
+      'Premier campus theatre society famous for high-impact Nukkad Natak (street plays) outside Block 38 Uni Mall, proscenium stage dramas, and mime.',
+    interestNames: ['Theatre & Drama', 'Content Creation', 'Public Speaking'],
+  },
+  {
+    id: 'seed-club-iqlipse',
+    name: 'IQLIPSE & Dhwani Music Society',
+    description:
+      'Campus acoustic bands, vocalists, beatboxers, and instrumentalists hosting open mics at Baldev Raj Mittal Unipolis and campus concerts.',
+    interestNames: ['Music', 'Content Creation'],
+  },
+  {
+    id: 'seed-club-vibedance',
+    name: 'Vibe Dance Crew / Western & Eastern Beats',
+    description:
+      'Elite dance teams representing LPU in hip-hop, folk (Bhangra, Giddha), and contemporary styles across national college fests and YouthVibe.',
+    interestNames: ['Fitness & Health', 'Content Creation'],
+  },
+  {
+    id: 'seed-club-shutterbugs',
+    name: 'Shutterbugs LPU & Uni TV',
+    description:
+      'Official campus media society covering university life with DSLR photography, cinematography, reel production, and color grading workshops.',
+    interestNames: ['Photography', 'Content Creation', 'Design'],
+  },
+  {
+    id: 'seed-club-designersden',
+    name: 'Designers Den (School of Design, Block 12)',
+    description:
+      'Product designers, visual artists, and Figma creators hosting 24-hour UI/UX sprints, design thinking workshops, and campus design reviews.',
+    interestNames: ['Design', 'UI/UX', 'Content Creation'],
+  },
+  {
+    id: 'seed-club-kalakriti',
+    name: 'Kalakriti & Canvas Fine Arts Club',
+    description:
+      'Fine arts guild specializing in acrylic painting, digital illustration, charcoal sketching, clay modeling, and campus art installations.',
+    interestNames: ['Design', 'Content Creation'],
+  },
+
+  // Business, Finance & Entrepreneurship (Mittal School of Business)
+  {
+    id: 'seed-club-sml',
+    name: 'SML (Society for Management Learning)',
+    description:
+      'Prominent Mittal School of Business (MSB) organization hosting management symposiums, corporate crisis simulations, and business case competitions.',
+    interestNames: ['Startups', 'Entrepreneurship', 'Public Speaking'],
+  },
+  {
+    id: 'seed-club-ecell',
+    name: 'E-Cell LPU & Griffin Startup Hub',
+    description:
+      'University startup incubator under DSW supporting student founders with pitch sessions, angel mentor access, and the InnovateX conference.',
+    interestNames: ['Startups', 'Entrepreneurship', 'Finance & Investing'],
+  },
+  {
+    id: 'seed-club-finix',
+    name: 'Finix (The Finance & Investment Club)',
+    description:
+      'Student-led finance club conducting mock stock trading leagues, crypto and algorithmic trading sessions, and personal finance bootcamps.',
+    interestNames: ['Finance & Investing', 'Startups', 'Data Science'],
+  },
+  {
+    id: 'seed-club-markophilic',
+    name: 'Markophilic (The Marketing Society)',
+    description:
+      'Creative marketing guild hosting Ad-Mad satire commercials, viral product launch pitch battles, and digital growth marketing workshops.',
+    interestNames: ['Startups', 'Design', 'Content Creation'],
+  },
+
+  // Social Initiatives, Literary, Oratory & Esports
+  {
+    id: 'seed-club-sankalp',
+    name: 'Sankalp Green & Environmental Club',
+    description:
+      'Student-driven sustainability society organizing campus tree plantation drives, plastic-free initiatives, and renewable energy workshops.',
+    interestNames: ['Environmental Initiatives', 'Social Welfare'],
+  },
+  {
+    id: 'seed-club-wingsofhope',
+    name: 'Wings of Hope & Aashray Social Welfare',
+    description:
+      'Dedicated social impact body coordinating blood donation drives, underprivileged children education camps, and disaster relief campaigns.',
+    interestNames: ['Social Welfare', 'Public Speaking'],
+  },
+  {
+    id: 'seed-club-spade',
+    name: 'SPADE & Club20 Student Welfare',
+    description:
+      'Vibrant student welfare collective organizing campus health checkups, mental wellness discussions, and interactive freshmen mixer sessions.',
+    interestNames: ['Social Welfare', 'Fitness & Health'],
+  },
+  {
+    id: 'seed-club-debate',
+    name: 'LPU Parliamentary Debating Union',
+    description:
+      'Asian Parliamentary debating team, oratory society, and Model United Nations (MUN) caucus training in Senate Chambers (Block 1).',
+    interestNames: ['Debate', 'Public Speaking', 'Entrepreneurship'],
+  },
+  {
+    id: 'seed-club-esports',
+    name: 'LPU Esports & Gaming Guild',
+    description:
+      'Competitive gaming guild organizing inter-hostel Valorant, BGMI, and FIFA LAN tournaments with live broadcast and shoutcasting in Block 34.',
+    interestNames: ['Gaming', 'Design', 'Content Creation'],
+  },
+];
+
+const SEED_EVENTS = [
+  // ── Top-Level Flagship Hackathons ──
+  {
+    id: 'seed-event-sih',
+    title: 'Smart India Hackathon (SIH 2026) LPU Internal Selection',
+    description:
+      'Annual university-level 36-hour internal hackathon to evaluate and nominate top 30 student teams to represent LPU at the national SIH grand finale.',
+    date: new Date('2026-11-05T09:00:00Z'),
+    location: 'Block 34, Central Auditorium & Computing Labs',
+    price: 0,
+    interestNames: ['Artificial Intelligence', 'Web Development', 'Startups', 'Cybersecurity'],
+  },
+  {
+    id: 'seed-event-hackwave',
+    title: 'HackWave 2026 (National Hackathon by Tatva)',
+    description:
+      '36-hour flagship national-level hackathon with tracks in Web3, Generative AI, Open Innovation, and FinTech. ₹1,50,000 cash prize pool.',
+    date: new Date('2026-11-14T09:30:00Z'),
+    location: 'Shanti Devi Mittal Auditorium (Block 38)',
+    price: 0,
+    interestNames: ['Web Development', 'Blockchain', 'Artificial Intelligence', 'Startups'],
+  },
+  {
+    id: 'seed-event-cyberwar',
+    title: 'Cyberwar 2026: 36-Hour National CTF & Hack',
+    description:
+      'National cybersecurity hackathon hosted by CybSec LPU. Live jeopardy-style CTF, exploit mitigation, cryptography puzzles, and web penetration testing.',
+    date: new Date('2026-11-22T10:00:00Z'),
+    location: 'Cyber Defense Lab, Block 34 (SCSE)',
+    price: 0,
+    interestNames: ['Cybersecurity', 'Cloud Computing', 'Open Source'],
+  },
+  {
+    id: 'seed-event-aetherax',
+    title: 'AetheraX 2026: 24h IoT & Hardware-Software Hackathon',
+    description:
+      'Multi-track hardware and software innovation challenge. Build connected IoT devices, smart campus prototypes, and edge AI solutions in 24 hours.',
+    date: new Date('2026-12-02T10:00:00Z'),
+    location: 'Innovation Studio & Workshop, Block 36',
+    price: 0,
+    interestNames: ['Robotics', 'Artificial Intelligence', 'App Development'],
+  },
+  {
+    id: 'seed-event-wow',
+    title: 'Week of Wonders (WoW Hack) by GDG on Campus',
+    description:
+      'Multi-day tech summit and hackathon with Google Developer Experts, mentorship on Android Studio, Flutter, Cloud Run, and Gemini API integration.',
+    date: new Date('2026-12-12T09:00:00Z'),
+    location: 'Block 34 SCSE Main Hall & Online',
+    price: 0,
+    interestNames: ['Artificial Intelligence', 'Web Development', 'App Development', 'Cloud Computing'],
+  },
+  {
+    id: 'seed-event-youthvibe',
+    title: 'YouthVibe 2027: National Inter-College Tech Arena',
+    description:
+      'Flagship mega hackathon and robotics showdown of LPU YouthVibe. Teams battle across 48 hours for ₹2,00,000 in prizes and industry hiring fast-tracks.',
+    date: new Date('2027-01-22T10:00:00Z'),
+    location: 'Baldev Raj Mittal Unipolis',
+    price: 199,
+    interestNames: ['Artificial Intelligence', 'Web Development', 'Robotics', 'Gaming'],
+  },
+
+  // ── Mid-Level & Departmental Competitions ──
+  {
+    id: 'seed-event-auroracode',
+    title: 'Aurora Codefest 2026: Algorithmic & Sprint Clash',
+    description:
+      'Intense algorithmic problem-solving and speed coding showdown. Dynamic programming, graph algorithms, and system design challenges.',
+    date: new Date('2026-11-18T14:00:00Z'),
+    location: 'Central Computing Lab 4, Block 14',
+    price: 0,
+    interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
+  },
+  {
+    id: 'seed-event-robowars',
+    title: 'RoboWars & Autonomous Combat Arena',
+    description:
+      'Combat bot showdown and autonomous line-follower obstacle race hosted by RISC. Weight categories: 5kg featherweight and autonomous line bots.',
+    date: new Date('2026-11-28T11:00:00Z'),
+    location: 'Innovation Studio & Combat Arena, Block 36',
+    price: 99,
+    interestNames: ['Robotics', 'Fitness & Health'],
+  },
+  {
+    id: 'seed-event-kaggle',
     title: 'Kaggle Campus Cup: Predictive ML Datathon',
     description:
-      'Analyze complex campus datasets to build predictive models. Real-world machine learning challenge for student data scientists.',
-    date: new Date('2026-12-10T10:00:00Z'),
+      'Analyze complex campus datasets to engineer predictive student placement models and computer vision pipelines. Mentored by data scientists.',
+    date: new Date('2026-12-06T10:00:00Z'),
     location: 'Data Analytics Wing, Block 32',
     price: 149,
     interestNames: ['Data Science', 'Machine Learning', 'Artificial Intelligence'],
   },
   {
-    id: 'seed-event-10',
-    title: 'Acoustic Unplugged & Indie Music Jam',
+    id: 'seed-event-innovatex',
+    title: 'InnovateX 2026: Campus Startup Pitch Gala',
     description:
-      'Open mic night for student vocalists, bands, and instrumentalists. High-energy music and creative collaboration.',
-    date: new Date('2026-12-15T18:00:00Z'),
-    location: 'Amphitheatre Central Green',
-    interestNames: ['Music', 'Content Creation'],
+      'LPU student founders pitch pre-seed ideas to Punjab Angel Network investors and alumni founders. Seed grant pool of ₹1,00,000.',
+    date: new Date('2026-12-16T15:30:00Z'),
+    location: 'Mittal School of Business (Block 14 Auditorium)',
+    price: 0,
+    interestNames: ['Startups', 'Entrepreneurship', 'Finance & Investing'],
+  },
+
+  // ── Grassroots & Low-Level Departmental Mini-Events (Weekly/Monthly) ──
+  {
+    id: 'seed-event-novicehack',
+    title: 'Novice 12-Hour Overnight Mini-Hack',
+    description:
+      'Beginner-friendly overnight coding sprint organized by Coding Ninjas & GFG LPU for 1st & 2nd years to ship their first working CRUD web app.',
+    date: new Date('2026-10-26T18:00:00Z'),
+    location: 'Lab 5, Block 34 (SCSE)',
+    price: 0,
+    interestNames: ['Web Development', 'Open Source', 'UI/UX'],
   },
   {
-    id: 'seed-event-11',
-    title: 'Campus Photo Walk & Street Photography Exhibition',
+    id: 'seed-event-speedcode',
+    title: '2-Hour LeetCode Speed-Coding Sprint',
     description:
-      'Guided photography tour focusing on golden-hour campus architecture, candid portraits, and Lightroom editing.',
-    date: new Date('2026-12-20T15:30:00Z'),
-    location: 'Main University Plaza',
+      'Fast-paced bi-weekly contest by Coding Blocks LPU. 4 DSA problems in 120 minutes with live campus leaderboard and swag vouchers.',
+    date: new Date('2026-10-30T17:00:00Z'),
+    location: 'Computing Lab 2, Block 14',
+    price: 0,
+    interestNames: ['Competitive Programming', 'Open Source'],
+  },
+  {
+    id: 'seed-event-designsprint',
+    title: '24-Hour UI/UX Campus Design Sprint',
+    description:
+      'Non-code design sprint by Designers Den. Redesign campus transit, hostel laundry, and food ordering experiences in Figma with component systems.',
+    date: new Date('2026-11-08T11:00:00Z'),
+    location: 'Design Studio A, Block 12',
+    price: 0,
+    interestNames: ['Design', 'UI/UX', 'Content Creation'],
+  },
+  {
+    id: 'seed-event-nukkadnatak',
+    title: 'Nukkad Natak Street Play Festival',
+    description:
+      'High-voltage street theatre showcase by Natya Manch outside Uni Mall. 8 departmental teams perform socially charged musical street plays.',
+    date: new Date('2026-11-12T16:00:00Z'),
+    location: 'Uni Mall Lawn & Plaza (Block 38)',
+    price: 0,
+    interestNames: ['Theatre & Drama', 'Social Welfare', 'Content Creation'],
+  },
+  {
+    id: 'seed-event-photowalk',
+    title: 'Golden Hour Photo Walk & Reel Contest',
+    description:
+      'Guided campus photography tour by Shutterbugs LPU focusing on golden-hour architectural framing, candid portraits, and 30-second reels.',
+    date: new Date('2026-11-20T15:30:00Z'),
+    location: 'Uni-Lake, Main Campus Plaza',
+    price: 0,
     interestNames: ['Photography', 'Content Creation', 'Design'],
   },
   {
-    id: 'seed-event-12',
-    title: 'Parliamentary Debate & Eloquence Gala',
+    id: 'seed-event-esportsderby',
+    title: 'Campus LAN Valorant & BGMI Derby',
     description:
-      'National-style Asian parliamentary debate championship. Sharpen oratory mastery, critical argumentation, and diplomacy.',
-    date: new Date('2026-12-28T11:00:00Z'),
+      'Inter-hostel gaming clash organized by LPU Esports Guild. 16 teams compete on low-latency LAN rigs with spectator commentary.',
+    date: new Date('2026-11-25T13:00:00Z'),
+    location: 'Esports Gaming Lounge, Block 34',
+    price: 149,
+    interestNames: ['Gaming', 'Content Creation', 'Design'],
+  },
+  {
+    id: 'seed-event-admad',
+    title: 'Case Study & Ad-Mad Satire Commercial Showdown',
+    description:
+      'Mittal School of Business marketing clash. Teams create 90-second satirical commercials and tackle a live brand PR crisis.',
+    date: new Date('2026-12-04T14:30:00Z'),
+    location: 'Seminar Hall 2, Block 14 (MSB)',
+    price: 0,
+    interestNames: ['Startups', 'Content Creation', 'Public Speaking'],
+  },
+  {
+    id: 'seed-event-unplugged',
+    title: 'Campus Acoustic Unplugged & Open Mic',
+    description:
+      'Open-air musical evening by IQLIPSE. Acoustic guitars, beatboxers, indie vocalists, and student bands under the night lights.',
+    date: new Date('2026-12-10T18:00:00Z'),
+    location: 'Amphitheatre Central Green (Unipolis)',
+    price: 0,
+    interestNames: ['Music', 'Content Creation'],
+  },
+  {
+    id: 'seed-event-treeplantation',
+    title: 'Green Campus Cleanliness & Tree Plantation Drive',
+    description:
+      'Volunteer morning with Sankalp Club planting 300 saplings across LPU green belts and hosting an e-waste awareness session.',
+    date: new Date('2026-12-18T08:30:00Z'),
+    location: 'Block 13 Lawns & Central Gardens',
+    price: 0,
+    interestNames: ['Environmental Initiatives', 'Social Welfare'],
+  },
+  {
+    id: 'seed-event-parldebate',
+    title: 'Asian Parliamentary Debate Round: AI & Ethics',
+    description:
+      'Elite oratory clash hosted by LPU Debating Union in parliamentary style. Motions on autonomous AI copyright, privacy, and campus free speech.',
+    date: new Date('2026-12-24T14:00:00Z'),
     location: 'Senate Chambers, Block 1',
-    interestNames: ['Debate', 'Public Speaking', 'Entrepreneurship'],
-  },
-  {
-    id: 'seed-event-13',
-    title: 'LPU Premier League: T20 Cricket Cup',
-    description:
-      'Annual departmental cricket league. 16 teams battle for the campus championship cup with floodlit finals.',
-    date: new Date('2027-01-10T14:00:00Z'),
-    location: 'University Sports Complex Grounds',
-    interestNames: ['Cricket', 'Fitness & Health'],
-  },
-  {
-    id: 'seed-event-14',
-    title: 'Inter-Department Football Derby & League',
-    description:
-      '7-a-side competitive soccer league with scouts, refereeing, and athletic awards for student football players.',
-    date: new Date('2027-01-18T16:30:00Z'),
-    location: 'Main Football Turf Stadium',
-    interestNames: ['Football', 'Fitness & Health'],
+    price: 0,
+    interestNames: ['Debate', 'Public Speaking', 'Artificial Intelligence'],
   },
 ];
 
@@ -187,19 +483,19 @@ const SEED_STUDENTS = [
     name: 'Rahul Sharma',
     username: 'rahul_dev',
     email: 'rahul.sharma@lpu.in',
-    department: 'School of Computer Science & Engineering',
+    department: 'School of Computer Science & Engineering (Block 34)',
     yearOfStudy: 3,
-    bio: 'Looking for teammates for hackathons and building agentic developer tools.',
-    interestNames: ['Artificial Intelligence', 'Web Development', 'Open Source', 'Startups'],
+    bio: 'Full-stack TypeScript dev building agentic tooling. Competing in SIH 2026 and Coding Blocks mini-hacks.',
+    interestNames: ['Artificial Intelligence', 'Web Development', 'Open Source', 'Competitive Programming'],
   },
   {
     id: 'seed-student-2',
     name: 'Ananya Singh',
-    username: 'ananya_singh',
+    username: 'ananya_design',
     email: 'ananya.singh@lpu.in',
-    department: 'School of Design',
+    department: 'School of Design (Block 12)',
     yearOfStudy: 2,
-    bio: 'Interested in building student products and designing modern web experiences.',
+    bio: 'Product designer in Designers Den. Passionate about Figma systems, campus UX, and clean visual identity.',
     interestNames: ['Design', 'UI/UX', 'Content Creation', 'Startups'],
   },
   {
@@ -207,9 +503,9 @@ const SEED_STUDENTS = [
     name: 'Dev Kapoor',
     username: 'dev_kapoor',
     email: 'dev.kapoor@lpu.in',
-    department: 'School of Computer Science & Engineering',
+    department: 'School of Computer Science & Engineering (Block 34)',
     yearOfStudy: 3,
-    bio: 'Working on campus utilities and cross-platform Flutter/React Native tools.',
+    bio: 'Coding Ninjas student chapter lead. Building Flutter and React Native cross-platform apps.',
     interestNames: ['Web Development', 'App Development', 'Open Source'],
   },
   {
@@ -217,9 +513,9 @@ const SEED_STUDENTS = [
     name: 'Priya Verma',
     username: 'priya_ai',
     email: 'priya.verma@lpu.in',
-    department: 'School of Computer Applications',
+    department: 'School of Computer Applications (Block 34)',
     yearOfStudy: 3,
-    bio: 'Looking for research collaborators and hackathon partners for LLM projects.',
+    bio: 'Fine-tuning open source LLMs and building retrieval agents. Seeking data science hackathon partners.',
     interestNames: ['Artificial Intelligence', 'Machine Learning', 'Data Science'],
   },
   {
@@ -227,9 +523,9 @@ const SEED_STUDENTS = [
     name: 'Rohan Mehta',
     username: 'rohan_mehta',
     email: 'rohan.mehta@lpu.in',
-    department: 'Mittal School of Business',
+    department: 'Mittal School of Business (Block 14)',
     yearOfStudy: 4,
-    bio: 'Building student startup incubators and fintech tools. Seeking co-founders.',
+    bio: 'E-Cell & Griffin member. Building a student micro-SaaS incubator. Looking for technical co-founders.',
     interestNames: ['Startups', 'Entrepreneurship', 'Finance & Investing'],
   },
   {
@@ -237,9 +533,9 @@ const SEED_STUDENTS = [
     name: 'Sneha Reddy',
     username: 'sneha_robotics',
     email: 'sneha.reddy@lpu.in',
-    department: 'School of Electronics & Electrical Engineering',
+    department: 'School of Electronics & Electrical Engineering (Block 28)',
     yearOfStudy: 2,
-    bio: 'Autonomous bot engineering, drone navigation, and sensor firmware.',
+    bio: 'RISC robotics developer. Embedded C, ROS2 navigation, and autonomous rover sensor telemetry.',
     interestNames: ['Robotics', 'Artificial Intelligence', 'Machine Learning'],
   },
   {
@@ -247,9 +543,9 @@ const SEED_STUDENTS = [
     name: 'Aarav Patel',
     username: 'aarav_coder',
     email: 'aarav.patel@lpu.in',
-    department: 'School of Computer Science & Engineering',
+    department: 'School of Computer Science & Engineering (Block 34)',
     yearOfStudy: 2,
-    bio: 'Competitive programmer (Candidate Master on CF). Looking for ICPC squad mates.',
+    bio: 'Competitive programmer (Candidate Master on CF). Looking for ICPC squad mates for CodeChef LPU.',
     interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
   },
   {
@@ -257,128 +553,35 @@ const SEED_STUDENTS = [
     name: 'Tanvi Joshi',
     username: 'tanvi_joshi',
     email: 'tanvi.joshi@lpu.in',
-    department: 'School of Journalism & Film Production',
+    department: 'School of Journalism & Film Production (Block 25)',
     yearOfStudy: 3,
-    bio: 'Campus cinematography lead, event visual stories, and video editing.',
-    interestNames: ['Photography', 'Content Creation', 'Design'],
-  },
-];
-
-const SEED_CLUBS = [
-  {
-    id: 'seed-club-1',
-    name: 'Google Developer Student Club',
-    description:
-      'Community for university students passionate about Google developer technologies, cloud architectures, and open-source collaboration.',
-    interestNames: [
-      'Web Development',
-      'Cloud Computing',
-      'Open Source',
-    ],
-  },
-  {
-    id: 'seed-club-2',
-    name: 'AI & Robotics Society',
-    description:
-      'Student-led technical club fostering hands-on research in autonomous bots, machine learning, and computer vision competitions.',
-    interestNames: [
-      'Artificial Intelligence',
-      'Robotics',
-      'Machine Learning',
-    ],
-  },
-  {
-    id: 'seed-club-3',
-    name: 'Design & UX Collective',
-    description:
-      'Creative space for product designers, Figma creators, and visual storytellers building intuitive student interfaces.',
-    interestNames: ['Design', 'UI/UX', 'Content Creation'],
-  },
-  {
-    id: 'seed-club-4',
-    name: 'Campus E-Cell',
-    description:
-      'Hub for budding campus entrepreneurs. We host startup pitch sessions, incubator access, and mentor mixers.',
-    interestNames: [
-      'Startups',
-      'Entrepreneurship',
-      'Finance & Investing',
-    ],
-  },
-  {
-    id: 'seed-club-5',
-    name: 'CyberShield Information Security Society',
-    description:
-      'White-hat ethical hackers and security researchers. Hands-on bug bounty hunting, reverse engineering, and defensive forensics.',
-    interestNames: ['Cybersecurity', 'Cloud Computing', 'Blockchain'],
-  },
-  {
-    id: 'seed-club-6',
-    name: 'Competitive Coding & Algorithmic Guild',
-    description:
-      'Dedicated training club for Codeforces, LeetCode, and ICPC contests with weekly live mock rounds and problem editorial discussions.',
-    interestNames: ['Competitive Programming', 'Data Science', 'Open Source'],
-  },
-  {
-    id: 'seed-club-7',
-    name: 'Mobile App Developers Guild',
-    description:
-      'Community building slick native & cross-platform Android and iOS applications with Flutter, Swift, and React Native.',
-    interestNames: ['App Development', 'Web Development', 'UI/UX'],
-  },
-  {
-    id: 'seed-club-8',
-    name: 'GameCraft & Esports Union',
-    description:
-      'Unity and Unreal engine game developers, 3D modelers, and competitive esports organizers uniting gamers across campus.',
-    interestNames: ['Gaming', 'Design', 'App Development'],
-  },
-  {
-    id: 'seed-club-9',
-    name: 'Data Science & Machine Learning Hub',
-    description:
-      'Applied analytics group working on big data, LLM fine-tuning, computer vision, and quantitative research papers.',
-    interestNames: ['Data Science', 'Machine Learning', 'Artificial Intelligence'],
-  },
-  {
-    id: 'seed-club-10',
-    name: 'Campus Music Society & Sound Lab',
-    description:
-      'Bands, vocalists, audio producers, and live session musicians organizing acoustic jams and campus concerts.',
-    interestNames: ['Music', 'Content Creation'],
-  },
-  {
-    id: 'seed-club-11',
-    name: 'Shutterbugs Photography & Media Guild',
-    description:
-      'Visual storytellers mastering DSLR photography, cinematography, color grading, and creative campus media coverage.',
+    bio: 'Shutterbugs cinematography lead. Directing campus visual stories and cinematic YouTube docuseries.',
     interestNames: ['Photography', 'Content Creation', 'Design'],
   },
   {
-    id: 'seed-club-12',
-    name: 'Toastmasters & Campus Debate Union',
-    description:
-      'Elite oratory club fostering charismatic public speaking, parliamentary debate, negotiation, and campus leadership.',
-    interestNames: ['Public Speaking', 'Debate', 'Entrepreneurship'],
+    id: 'seed-student-9',
+    name: 'Manpreet Singh',
+    username: 'manpreet_theatre',
+    email: 'manpreet.singh@lpu.in',
+    department: 'Division of Student Welfare (Block 13)',
+    yearOfStudy: 3,
+    bio: 'Natya Manch director. Writing socially impactful Nukkad Natak scripts and street performance music.',
+    interestNames: ['Theatre & Drama', 'Content Creation', 'Public Speaking'],
   },
   {
-    id: 'seed-club-13',
-    name: 'Campus Athletics, Cricket & Football Club',
-    description:
-      'Official student sports body organizing intramural tournaments, varsity cricket matches, and fitness training.',
-    interestNames: ['Cricket', 'Football', 'Fitness & Health'],
-  },
-  {
-    id: 'seed-club-14',
-    name: 'Blockchain & FinTech Society',
-    description:
-      'Student chapter researching decentralized protocols, smart contract auditing, algorithmic trading, and personal finance.',
-    interestNames: ['Blockchain', 'Finance & Investing', 'Cybersecurity'],
+    id: 'seed-student-10',
+    name: 'Harsh Gupta',
+    username: 'harsh_fintech',
+    email: 'harsh.gupta@lpu.in',
+    department: 'Mittal School of Business (Block 14)',
+    yearOfStudy: 2,
+    bio: 'Finix finance society member. Quantitative trading models, crypto security, and campus fintech.',
+    interestNames: ['Finance & Investing', 'Startups', 'Data Science'],
   },
 ];
 
 async function main() {
-  console.log('🌱 Seeding Campusly interests...');
+  console.log('🌱 Seeding authentic LPU campus interests...');
 
   let count = 0;
   for (const name of CAMPUS_INTERESTS) {
@@ -391,22 +594,26 @@ async function main() {
   }
   console.log(`✅ Successfully seeded ${count} campus interests!`);
 
-  // Ensure a campus organizer user exists to attribute events & clubs to
-  console.log('🌱 Seeding campus organizer, events, and clubs...');
+  // Ensure DSW central organizer user exists
+  console.log('🌱 Seeding LPU Division of Student Welfare (DSW) organizer...');
   const organizer = await prisma.user.upsert({
     where: { email: 'organizer@campusly.internal' },
-    update: {},
+    update: {
+      name: 'LPU Division of Student Welfare (DSW)',
+      department: 'Division of Student Welfare, Block 13',
+    },
     create: {
       id: 'seed-organizer-user',
-      name: 'Campus Event Board',
+      name: 'LPU Division of Student Welfare (DSW)',
       email: 'organizer@campusly.internal',
-      department: 'Student Affairs',
+      department: 'Division of Student Welfare, Block 13',
       yearOfStudy: 4,
       emailVerified: true,
     },
   });
 
-  // Seed events and link their interests
+  // Seed authentic LPU events across all tiers
+  console.log(`🌱 Seeding ${SEED_EVENTS.length} authentic LPU events (flagship to departmental)...`);
   for (const eventData of SEED_EVENTS) {
     const event = await prisma.event.upsert({
       where: { id: eventData.id },
@@ -451,9 +658,10 @@ async function main() {
       }
     }
   }
-  console.log(`✅ Successfully seeded ${SEED_EVENTS.length} campus events!`);
+  console.log(`✅ Successfully seeded ${SEED_EVENTS.length} authentic LPU events!`);
 
-  // Seed clubs and link their interests
+  // Seed authentic LPU clubs across all categories
+  console.log(`🌱 Seeding ${SEED_CLUBS.length} authentic LPU clubs across all domains...`);
   for (const clubData of SEED_CLUBS) {
     const club = await prisma.club.upsert({
       where: { id: clubData.id },
@@ -490,10 +698,10 @@ async function main() {
       }
     }
   }
-  console.log(`✅ Successfully seeded ${SEED_CLUBS.length} campus clubs!`);
+  console.log(`✅ Successfully seeded ${SEED_CLUBS.length} authentic LPU clubs!`);
 
-  // Seed campus students and link their interests
-  console.log('🌱 Seeding campus students & peer profiles...');
+  // Seed authentic LPU student profiles
+  console.log('🌱 Seeding authentic LPU student profiles...');
   for (const studentData of SEED_STUDENTS) {
     const student = await prisma.user.upsert({
       where: { email: studentData.email },
@@ -537,7 +745,7 @@ async function main() {
       }
     }
   }
-  console.log(`✅ Successfully seeded ${SEED_STUDENTS.length} campus students!`);
+  console.log(`✅ Successfully seeded ${SEED_STUDENTS.length} authentic LPU student profiles!`);
 }
 
 main()

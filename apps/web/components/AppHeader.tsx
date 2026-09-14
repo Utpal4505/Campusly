@@ -21,11 +21,21 @@ import {
   ChevronDown,
   User,
   Building2,
+  GraduationCap,
+  ShieldCheck,
+  Check,
 } from "lucide-react";
 
 export default function AppHeader() {
   const pathname = usePathname();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    signOut,
+    currentRole,
+    roleProfile,
+    switchRole,
+  } = useAuth();
   const {
     userName,
     setCreateModalOpen,
@@ -154,7 +164,7 @@ export default function AppHeader() {
                   type="button"
                   onClick={() => setMenuOpen(!menuOpen)}
                   className="h-8 pl-1 pr-2 rounded-lg border border-border/60 bg-card hover:bg-muted/60 flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="User Account Menu"
+                  title="User Account & Role Menu"
                 >
                   <div className="w-6 h-6 rounded-md overflow-hidden border border-border/70 flex items-center justify-center bg-muted/20">
                     <img
@@ -163,24 +173,30 @@ export default function AppHeader() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="text-xs font-semibold text-foreground hidden sm:inline-block max-w-[90px] truncate">
+                  <span className="text-xs font-semibold text-foreground hidden sm:inline-block max-w-[80px] truncate">
                     {displayName}
+                  </span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md border hidden md:inline-block ${roleProfile.badgeColor}`}>
+                    {roleProfile.badgeLabel}
                   </span>
                   <ChevronDown className="w-3 h-3 text-muted-foreground" />
                 </button>
 
                 {/* Dropdown Menu */}
                 {menuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 animate-in fade-in-0 zoom-in-95">
+                  <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-card p-1.5 shadow-xl z-50 animate-in fade-in-0 zoom-in-95">
                     <div className="px-2.5 py-2 border-b border-border/60 mb-1">
                       <div className="flex items-center justify-between gap-1">
                         <p className="text-xs font-semibold text-foreground truncate">{displayName}</p>
-                        {user?.username && (
-                          <span className="text-[10px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded border border-primary/20 shrink-0">
-                            @{user.username}
-                          </span>
-                        )}
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${roleProfile.badgeColor} shrink-0`}>
+                          {roleProfile.badgeLabel}
+                        </span>
                       </div>
+                      {user?.username && (
+                        <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                          @{user.username}
+                        </p>
+                      )}
                       {displayEmail && (
                         <p className="text-[11px] text-muted-foreground truncate">{displayEmail}</p>
                       )}
@@ -204,17 +220,20 @@ export default function AppHeader() {
                       <span>My Event Tickets</span>
                     </Link>
 
-                    <Link
-                      href="/manage"
-                      onClick={() => setMenuOpen(false)}
-                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-                    >
-                      <Building2 className="w-3.5 h-3.5 text-emerald-500" />
-                      <span className="flex-1">Organizer & Club Hub</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        Lead
-                      </span>
-                    </Link>
+                    {/* Organizer & Club Hub: Scoped strictly to CLUB_LEAD and DSW_ADMIN */}
+                    {currentRole !== "STUDENT" && (
+                      <Link
+                        href="/manage"
+                        onClick={() => setMenuOpen(false)}
+                        className="w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+                      >
+                        <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="flex-1">Organizer & Club Hub</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          {currentRole === "DSW_ADMIN" ? "Admin" : "Lead"}
+                        </span>
+                      </Link>
+                    )}
 
                     <button
                       type="button"
@@ -227,6 +246,78 @@ export default function AppHeader() {
                       <SlidersHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>Interests & Preferences</span>
                     </button>
+
+                    <div className="h-px bg-border/60 my-1" />
+
+                    {/* Interactive Persona Switcher (RBAC) */}
+                    <div className="px-1.5 py-1">
+                      <div className="flex items-center justify-between px-1 mb-1.5">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                          Persona Switcher (RBAC)
+                        </span>
+                        <span className="text-[9px] text-muted-foreground/80 font-mono">
+                          Live demo
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => switchRole("STUDENT")}
+                          className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                            currentRole === "STUDENT"
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold border border-blue-500/25"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 text-left">
+                            <GraduationCap className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            <div>
+                              <p className="leading-tight">Student</p>
+                              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Attendee / No admin</p>
+                            </div>
+                          </div>
+                          {currentRole === "STUDENT" && <Check className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => switchRole("CLUB_LEAD")}
+                          className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                            currentRole === "CLUB_LEAD"
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/25"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 text-left">
+                            <Building2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <div>
+                              <p className="leading-tight">Club Lead</p>
+                              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">GDG & Coding Blocks</p>
+                            </div>
+                          </div>
+                          {currentRole === "CLUB_LEAD" && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => switchRole("DSW_ADMIN")}
+                          className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium flex items-center justify-between transition-colors cursor-pointer ${
+                            currentRole === "DSW_ADMIN"
+                              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold border border-purple-500/25"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 text-left">
+                            <ShieldCheck className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+                            <div>
+                              <p className="leading-tight">DSW Admin</p>
+                              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Campus Super-Admin</p>
+                            </div>
+                          </div>
+                          {currentRole === "DSW_ADMIN" && <Check className="w-3.5 h-3.5 text-purple-500 shrink-0" />}
+                        </button>
+                      </div>
+                    </div>
 
                     <div className="h-px bg-border/60 my-1" />
 

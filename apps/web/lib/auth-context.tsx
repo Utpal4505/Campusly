@@ -4,12 +4,22 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useRouter } from "next/navigation";
 import { authClient, UserProfile, UserSession } from "@/lib/auth";
 import { useCampusStore } from "@/lib/store";
+import { UserRole, RoleProfile, ROLE_PRESETS } from "@/lib/rbac";
+
+export type { UserRole, RoleProfile };
 
 interface AuthContextType {
   user: UserProfile | null;
   session: UserSession | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  currentRole: UserRole;
+  roleProfile: RoleProfile;
+  switchRole: (role: UserRole) => void;
+  canManageClub: (clubSlug: string) => boolean;
+  canManageEvent: (eventSlug: string) => boolean;
+  canApproveDutyLeave: (eventSlug: string) => boolean;
+  canReviewAuditions: (clubSlug: string) => boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -19,6 +29,13 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   isAuthenticated: false,
   isLoading: true,
+  currentRole: "STUDENT",
+  roleProfile: ROLE_PRESETS.STUDENT,
+  switchRole: () => {},
+  canManageClub: () => false,
+  canManageEvent: () => false,
+  canApproveDutyLeave: () => false,
+  canReviewAuditions: () => false,
   signOut: async () => {},
   refresh: async () => {},
 });
@@ -30,6 +47,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<UserSession | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentRole, setCurrentRole] = useState<UserRole>("STUDENT");
+
+  // Load persisted demo role if set
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("campusly:active-role") as UserRole | null;
+      if (saved && ROLE_PRESETS[saved]) {
+        setCurrentRole(saved);
+      }
+    }
+  }, []);
+
+  const switchRole = useCallback((role: UserRole) => {
+    setCurrentRole(role);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("campusly:active-role", role);
+      window.dispatchEvent(new CustomEvent("campusly:role-changed", { detail: role }));
+    }
+  }, []);
+
+  const roleProfile = ROLE_PRESETS[currentRole] || ROLE_PRESETS.STUDENT;
 
   const fetchAuth = useCallback(async () => {
     try {
@@ -96,6 +134,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         isAuthenticated: Boolean(session?.user),
         isLoading,
+        currentRole,
+        roleProfile,
+        switchRole,
+        canManageClub: roleProfile.canManageClub,
+        canManageEvent: roleProfile.canManageEvent,
+        canApproveDutyLeave: roleProfile.canApproveDutyLeave,
+        canReviewAuditions: roleProfile.canReviewAuditions,
         signOut,
         refresh: fetchAuth,
       }}

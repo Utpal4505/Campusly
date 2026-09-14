@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
+import RoleGuard from "@/components/RoleGuard";
 import { useAuth } from "@/lib/auth-context";
 import { getClubLogo } from "@/lib/club-assets";
 import { getEventCoverImage } from "@/lib/event-assets";
@@ -45,7 +46,7 @@ interface ManagedEvent {
 }
 
 export default function OrganizerHubPage() {
-  const { user } = useAuth();
+  const { user, currentRole } = useAuth();
 
   const [managedClubs, setManagedClubs] = useState<ManagedClub[]>([
     {
@@ -108,7 +109,14 @@ export default function OrganizerHubPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
       <AppHeader />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <RoleGuard
+        isAuthorized={currentRole !== "STUDENT"}
+        requiredRoleName="Club Executive (Lead) or DSW Admin"
+        backHref="/feed"
+        backLabel="Back to Student Feed"
+        resourceTitle="Campus Organizer & Leadership Hub"
+      >
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         
         {/* Hub Banner */}
         <div className="relative rounded-3xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/40 p-6 sm:p-8 mb-8 shadow-xs overflow-hidden">
@@ -339,6 +347,7 @@ export default function OrganizerHubPage() {
         </section>
 
       </main>
+      </RoleGuard>
     </div>
   );
 }

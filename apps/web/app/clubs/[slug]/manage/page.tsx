@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
+import RoleGuard from "@/components/RoleGuard";
+import { useAuth } from "@/lib/auth-context";
 import { getAnimeAvatar } from "@/lib/avatars";
 import { getClubCoverImage, getClubLogo } from "@/lib/club-assets";
 import {
@@ -81,6 +83,7 @@ export default function ClubManagePage() {
   const router = useRouter();
   const rawSlug = (params.slug as string) || "";
   const slug = rawSlug.toLowerCase();
+  const { canManageClub } = useAuth();
 
   const [activeTab, setActiveTab] = useState<"auditions" | "roster" | "settings">("auditions");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -252,7 +255,13 @@ export default function ClubManagePage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col pb-20">
       <AppHeader />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <RoleGuard
+        isAuthorized={canManageClub(slug)}
+        requiredRoleName="Club Executive (Lead) / DSW Admin"
+        backHref={`/clubs/${slug}`}
+        resourceTitle={clubDisplayName}
+      >
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-3 mb-6">
@@ -806,6 +815,7 @@ export default function ClubManagePage() {
         )}
 
       </main>
+      </RoleGuard>
 
       {/* Schedule Audition Interview Modal */}
       {interviewModalApp && (

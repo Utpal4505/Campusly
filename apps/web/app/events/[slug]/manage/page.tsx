@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
+import RoleGuard from "@/components/RoleGuard";
+import { useAuth } from "@/lib/auth-context";
 import TicketScannerModal from "@/components/TicketScannerModal";
 import {
   ArrowLeft,
@@ -62,6 +64,7 @@ export default function EventManagePage() {
   const router = useRouter();
   const rawSlug = (params.slug as string) || "";
   const slug = rawSlug.toLowerCase();
+  const { canManageEvent } = useAuth();
 
   const [attendance, setAttendance] = useState<EventAttendanceData | null>(null);
   const [activeTab, setActiveTab] = useState<"roster" | "dutyleave" | "manual">("roster");
@@ -211,7 +214,13 @@ export default function EventManagePage() {
         <AppHeader />
       </div>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+      <RoleGuard
+        isAuthorized={canManageEvent(slug)}
+        requiredRoleName="Event Coordinator / DSW Official"
+        backHref={`/events/${slug}`}
+        resourceTitle={eventTitle}
+      >
+        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
         
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between gap-3 mb-6 print:hidden">
@@ -688,6 +697,7 @@ export default function EventManagePage() {
         )}
 
       </main>
+      </RoleGuard>
 
       {/* Gate Ticket Camera Scanner Modal */}
       <TicketScannerModal

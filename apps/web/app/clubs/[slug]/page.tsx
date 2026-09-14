@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import AppHeader from "@/components/AppHeader";
 import { useCampusStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth-context";
 import { getAnimeAvatar } from "@/lib/avatars";
 import { authClient } from "@/lib/auth";
 import type { ClubDetail } from "@repo/schemas";
@@ -377,6 +378,7 @@ export default function ClubDetailPage() {
   const resolvedKey = CLUB_ID_ALIASES[slug] || slug;
 
   const { userName } = useCampusStore();
+  const { canManageClub } = useAuth();
 
   const [liveClub, setLiveClub] = useState<ClubDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -578,14 +580,16 @@ export default function ClubDetailPage() {
               <span>Apply for Inductions</span>
             </button>
 
-            <Link
-              href={`/clubs/${rawSlug}/manage`}
-              className="h-8 px-2.5 sm:px-3 rounded-lg border border-border/80 bg-card hover:bg-muted/60 flex items-center gap-1.5 text-xs font-semibold text-foreground transition-colors cursor-pointer shadow-2xs"
-              title="Manage club settings, roster & auditions"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
-              <span className="hidden sm:inline">Lead Console</span>
-            </Link>
+            {canManageClub(rawSlug) && (
+              <Link
+                href={`/clubs/${rawSlug}/manage`}
+                className="h-8 px-2.5 sm:px-3 rounded-lg border border-border/80 bg-card hover:bg-muted/60 flex items-center gap-1.5 text-xs font-semibold text-foreground transition-colors cursor-pointer shadow-2xs"
+                title="Manage club settings, roster & auditions"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 text-primary" />
+                <span className="hidden sm:inline">Lead Console</span>
+              </Link>
+            )}
 
             <button
               type="button"

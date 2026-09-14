@@ -31,6 +31,7 @@ import {
   Loader2,
   QrCode,
   Camera,
+  FileSpreadsheet,
 } from "lucide-react";
 import { getEventCoverImage } from "@/lib/event-assets";
 import TicketScannerModal from "@/components/TicketScannerModal";
@@ -329,6 +330,15 @@ export default function EventDetailPage() {
               <Camera className="w-3.5 h-3.5" />
               <span>Scan Tickets</span>
             </button>
+
+            <Link
+              href={`/events/${rawSlug}/manage`}
+              className="h-8 px-2.5 sm:px-3 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 transition-colors cursor-pointer shadow-2xs"
+              title="Duty Leave (DL) attendance console & sheet export"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="hidden sm:inline">Duty Leave Console</span>
+            </Link>
 
             <button
               type="button"

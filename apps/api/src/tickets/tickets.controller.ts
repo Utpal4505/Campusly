@@ -71,4 +71,28 @@ export class TicketsController {
     const userId = await this.getUserIdFromRequest(req);
     return this.ticketsService.findOneForUser(id, userId);
   }
+
+  /**
+   * GET /tickets/event/:eventId/attendance
+   * Get live gate attendance statistics and attendee roster for duty leave export.
+   */
+  @Get('event/:eventId/attendance')
+  async getEventAttendance(@Param('eventId') eventId: string) {
+    return this.ticketsService.getEventAttendance(eventId);
+  }
+
+  /**
+   * POST /tickets/event/:eventId/manual-checkin
+   * Manually check in an attendee by ticket number, email, or registration number.
+   */
+  @Post('event/:eventId/manual-checkin')
+  async manualCheckin(
+    @Param('eventId') eventId: string,
+    @Body() body: { query: string },
+  ) {
+    if (!body?.query) {
+      throw new BadRequestException('Attendee identifier (ticket number, reg no, or email) is required');
+    }
+    return this.ticketsService.manualCheckin(eventId, body.query);
+  }
 }

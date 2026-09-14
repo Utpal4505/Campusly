@@ -204,6 +204,18 @@ export default function AppHeader() {
                       <span>My Event Tickets</span>
                     </Link>
 
+                    <Link
+                      href="/manage"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+                    >
+                      <Building2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="flex-1">Organizer & Club Hub</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Lead
+                      </span>
+                    </Link>
+
                     <button
                       type="button"
                       onClick={() => {

@@ -24,84 +24,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-/**
- * Deterministic SVG QR Matrix Generator
- * Generates an authentic, sharp 25x25 QR pattern with standard position detection corners.
- */
-function VisualQRCode({ value, size = 180 }: { value: string; size?: number }) {
-  const gridSize = 25;
-  // Deterministic pseudo-random seed from value string
-  let seed = 0;
-  for (let i = 0; i < value.length; i++) {
-    seed = (seed * 31 + value.charCodeAt(i)) % 1000000007;
-  }
-
-  const isCorner = (x: number, y: number) => {
-    // Top-left
-    if (x < 7 && y < 7) return true;
-    // Top-right
-    if (x >= gridSize - 7 && y < 7) return true;
-    // Bottom-left
-    if (x < 7 && y >= gridSize - 7) return true;
-    return false;
-  };
-
-  const isCornerPixelBlack = (x: number, y: number) => {
-    // Normalize coordinates to 0..6
-    const nx = x < 7 ? x : x >= gridSize - 7 ? x - (gridSize - 7) : 0;
-    const ny = y < 7 ? y : y >= gridSize - 7 ? y - (gridSize - 7) : 0;
-
-    // Outer border (7x7)
-    if (nx === 0 || nx === 6 || ny === 0 || ny === 6) return true;
-    // Inner gap (5x5)
-    if (nx === 1 || nx === 5 || ny === 1 || ny === 5) return false;
-    // Inner box (3x3)
-    return true;
-  };
-
-  const cells: { x: number; y: number; fill: boolean }[] = [];
-  let prng = seed;
-  for (let y = 0; y < gridSize; y++) {
-    for (let x = 0; x < gridSize; x++) {
-      if (isCorner(x, y)) {
-        cells.push({ x, y, fill: isCornerPixelBlack(x, y) });
-      } else if (x === 6 || y === 6) {
-        // Timing patterns
-        cells.push({ x, y, fill: (x + y) % 2 === 0 });
-      } else {
-        // Data pattern
-        prng = (prng * 16807 + 11) % 2147483647;
-        cells.push({ x, y, fill: prng % 2 === 0 });
-      }
-    }
-  }
-
-  const cellSize = size / gridSize;
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      className="rounded-lg bg-white p-2 shadow-xs"
-    >
-      <rect width={size} height={size} fill="#ffffff" />
-      {cells.map(
-        (cell, i) =>
-          cell.fill && (
-            <rect
-              key={i}
-              x={cell.x * cellSize}
-              y={cell.y * cellSize}
-              width={cellSize + 0.5}
-              height={cellSize + 0.5}
-              fill="#0f172a"
-            />
-          )
-      )}
-    </svg>
-  );
-}
+import QRCodeDisplay from "@/components/QRCodeDisplay";
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -348,7 +271,13 @@ export default function TicketDetailPage() {
                   Scan for Campus Security & Entrance Check-in
                 </span>
 
-                <VisualQRCode value={ticket.ticketNumber} size={170} />
+                <QRCodeDisplay
+                  value={ticket.ticketNumber}
+                  size={180}
+                  bordered={true}
+                  darkColor="#0f172a"
+                  lightColor="#ffffff"
+                />
 
                 <div className="mt-4 inline-block px-4 py-1.5 rounded-xl bg-muted/60 border border-border/70">
                   <span className="font-mono text-sm sm:text-base font-black tracking-widest text-foreground">

@@ -1,7 +1,10 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
   Param,
+  Post,
   Req,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -35,6 +38,18 @@ export class TicketsController {
       throw new UnauthorizedException('You must be logged in to access tickets');
     }
     return session.user.id;
+  }
+
+  /**
+   * POST /tickets/checkin
+   * Scan and verify an event ticket at the gate.
+   */
+  @Post('checkin')
+  async checkinTicket(@Body() body: { ticketNumberOrId: string; eventId?: string }) {
+    if (!body?.ticketNumberOrId) {
+      throw new BadRequestException('Ticket number or QR code is required');
+    }
+    return this.ticketsService.checkinTicket(body.ticketNumberOrId, body.eventId);
   }
 
   /**

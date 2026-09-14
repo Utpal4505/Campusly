@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -194,6 +195,95 @@ export class TicketsService {
     }
 
     return this.formatTicket(ticket);
+  }
+
+  /**
+   * Verify and Check-in an attendee ticket at the event gate.
+   * Handles raw ticket numbers (e.g. CPLY-7F3K92), ticket UUIDs, or raw base64/JSON QR payloads.
+   */
+  async checkinTicket(ticketNumberOrId: string, eventId?: string) {
+    let cleanCode = (ticketNumberOrId || '').trim();
+
+    // If payload is base64 encoded JSON (as generated in qrCode field), decode it
+    if (cleanCode.length > 20 && !cleanCode.startsWith('CPLY-') && !cleanCode.startsWith('c')) {
+      try {
+        const decoded = Buffer.from(cleanCode, 'base64').toString('utf-8');
+        const parsed = JSON.parse(decoded);
+        if (parsed.ticketNumber) {
+          cleanCode = parsed.ticketNumber;
+        }
+      } catch {
+        // Also check if raw string is JSON
+        try {
+          const parsed = JSON.parse(cleanCode);
+          if (parsed.ticketNumber) {
+            cleanCode = parsed.ticketNumber;
+          }
+        } catch {
+          // not JSON, keep cleanCode
+        }
+      }
+    }
+
+    const ticket = await this.prisma.ticket.findFirst({
+      where: {
+        OR: [
+          { ticketNumber: { equals: cleanCode, mode: 'insensitive' } },
+          { id: cleanCode },
+        ],
+      },
+      include: {
+        event: true,
+        user: true,
+      },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException(`Ticket with code "${cleanCode}" could not be verified.`);
+    }
+
+    if (eventId && ticket.eventId !== eventId) {
+      throw new BadRequestException(
+        `This ticket is valid for "${ticket.event.title}", not this event!`,
+      );
+    }
+
+    if (ticket.status === 'CHECKED_IN') {
+      return {
+        success: true,
+        status: 'CHECKED_IN' as const,
+        alreadyCheckedIn: true,
+        ticketNumber: ticket.ticketNumber,
+        attendeeName: ticket.user.name,
+        attendeeEmail: ticket.user.email,
+        eventTitle: ticket.event.title,
+        eventId: ticket.eventId,
+        checkedInAt: ticket.updatedAt.toISOString(),
+        message: 'This ticket was already checked in earlier!',
+      };
+    }
+
+    const updated = await this.prisma.ticket.update({
+      where: { id: ticket.id },
+      data: { status: 'CHECKED_IN' },
+      include: {
+        event: true,
+        user: true,
+      },
+    });
+
+    return {
+      success: true,
+      status: 'CHECKED_IN' as const,
+      alreadyCheckedIn: false,
+      ticketNumber: updated.ticketNumber,
+      attendeeName: updated.user.name,
+      attendeeEmail: updated.user.email,
+      eventTitle: updated.event.title,
+      eventId: updated.eventId,
+      checkedInAt: updated.updatedAt.toISOString(),
+      message: 'Gate pass verified successfully! Attendee checked in.',
+    };
   }
 
   private formatTicket(ticket: any) {

@@ -38,7 +38,9 @@ import {
   Copy,
   ChevronRight,
   Loader2,
+  QrCode,
 } from "lucide-react";
+import PrintableFlyerModal from "@/components/PrintableFlyerModal";
 
 interface LeadershipMember {
   role: string;
@@ -384,6 +386,7 @@ export default function ClubDetailPage() {
   const [shareCopied, setShareCopied] = useState(false);
   const [calendarAdded, setCalendarAdded] = useState(false);
   const [discordJoined, setDiscordJoined] = useState(false);
+  const [isFlyerModalOpen, setIsFlyerModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -561,7 +564,17 @@ export default function ClubDetailPage() {
             <span>Back to For You Feed</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsFlyerModalOpen(true)}
+              className="h-8 px-2.5 sm:px-3 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 flex items-center gap-1.5 text-xs font-medium text-primary transition-colors cursor-pointer shadow-2xs"
+              title="Print or share club notice board flyer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Club Flyer QR</span>
+            </button>
+
             <button
               type="button"
               onClick={handleShare}
@@ -1423,6 +1436,24 @@ export default function ClubDetailPage() {
         )}
 
       </main>
+
+      {/* Printable Notice Board Club Flyer Modal */}
+      <PrintableFlyerModal
+        isOpen={isFlyerModalOpen}
+        onClose={() => setIsFlyerModalOpen(false)}
+        type="club"
+        title={club.name}
+        description={club.tagline || club.about}
+        coverImage={getClubCoverImage(club.name, liveClub?.id || rawSlug, (liveClub as any)?.coverImage)}
+        logo={getClubLogo(club.name, liveClub?.id || rawSlug, (liveClub as any)?.logo)}
+        urlPath={`/clubs/${rawSlug}`}
+        details={{
+          memberCount: club.membersCount,
+          category: club.category,
+          location: club.meetingVenue,
+          organizerName: "LPU Student Organization",
+        }}
+      />
 
       {/* Footer */}
       <footer className="w-full py-5 text-center text-xs text-muted-foreground border-t border-border/40 bg-muted/20 mt-12">

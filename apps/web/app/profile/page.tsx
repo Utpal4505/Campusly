@@ -25,7 +25,9 @@ import {
   X,
   Mail,
   GraduationCap,
+  QrCode,
 } from "lucide-react";
+import StudentConnectQRModal from "@/components/StudentConnectQRModal";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -38,6 +40,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Edit form state
   const [name, setName] = useState("");
@@ -195,7 +198,17 @@ export default function ProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="rounded-xl px-3.5 text-xs font-semibold gap-1.5 cursor-pointer h-9 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>My Campus Pass</span>
+                </Button>
+
                 <Button
                   size="sm"
                   onClick={() => setIsEditing(true)}
@@ -429,6 +442,24 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Student Connect QR Pass Modal */}
+      <StudentConnectQRModal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        user={{
+          id: profile?.id || sessionUser?.id || "",
+          name: displayName,
+          username: displayHandle,
+          avatar: (profile as any)?.image || (profile as any)?.avatar || null,
+          department: profile?.department,
+          yearOfStudy:
+            typeof profile?.yearOfStudy === "number"
+              ? profile.yearOfStudy
+              : parseInt(String(profile?.yearOfStudy || "2"), 10) || null,
+          interests: profile?.interests?.map((i) => i.name) || [],
+        }}
+      />
 
       {/* Footer */}
       <footer className="w-full py-6 text-center text-xs text-muted-foreground border-t border-border/40 mt-12 bg-muted/20">

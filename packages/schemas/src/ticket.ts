@@ -41,3 +41,25 @@ export const ticketSchema = z.object({
 });
 
 export type TicketItem = z.infer<typeof ticketSchema>;
+
+export const checkinTicketSchema = z.object({
+  ticketNumberOrId: z.string().min(1, 'Ticket number or QR payload is required'),
+  eventId: z.string().optional(),
+});
+
+export type CheckinTicketInput = z.infer<typeof checkinTicketSchema>;
+
+export const ticketCheckinResultSchema = z.object({
+  success: z.boolean(),
+  status: z.enum(['CONFIRMED', 'CHECKED_IN', 'CANCELLED']),
+  alreadyCheckedIn: z.boolean(),
+  ticketNumber: z.string(),
+  attendeeName: z.string(),
+  attendeeEmail: z.string().optional(),
+  eventTitle: z.string(),
+  eventId: z.string(),
+  checkedInAt: z.string(),
+  message: z.string().optional(),
+});
+
+export type TicketCheckinResult = z.infer<typeof ticketCheckinResultSchema>;

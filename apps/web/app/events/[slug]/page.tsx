@@ -29,8 +29,12 @@ import {
   ChevronRight,
   Info,
   Loader2,
+  QrCode,
+  Camera,
 } from "lucide-react";
 import { getEventCoverImage } from "@/lib/event-assets";
+import TicketScannerModal from "@/components/TicketScannerModal";
+import PrintableFlyerModal from "@/components/PrintableFlyerModal";
 
 export default function EventDetailPage() {
   const router = useRouter();
@@ -47,6 +51,8 @@ export default function EventDetailPage() {
   const [paymentReceipt, setPaymentReceipt] = useState<string | null>(null);
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isFlyerModalOpen, setIsFlyerModalOpen] = useState(false);
+  const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
 
   // Load Razorpay Checkout SDK
   useEffect(() => {
@@ -302,7 +308,27 @@ export default function EventDetailPage() {
             <span>Back to Events</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsFlyerModalOpen(true)}
+              className="h-8 px-2.5 sm:px-3 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 flex items-center gap-1.5 text-xs font-medium text-primary transition-colors cursor-pointer shadow-2xs"
+              title="Print or share event flyer"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Flyer QR</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsScannerModalOpen(true)}
+              className="h-8 px-2.5 sm:px-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 transition-colors cursor-pointer shadow-2xs"
+              title="Gate ticket camera scanner"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span>Scan Tickets</span>
+            </button>
+
             <button
               type="button"
               onClick={handleShare}
@@ -741,6 +767,39 @@ export default function EventDetailPage() {
         </div>
 
       </main>
+
+      {/* Gate Ticket Camera Scanner Modal */}
+      <TicketScannerModal
+        isOpen={isScannerModalOpen}
+        onClose={() => setIsScannerModalOpen(false)}
+        eventId={event.id}
+        eventTitle={event.title}
+      />
+
+      {/* Printable Notice Board Event Flyer Modal */}
+      <PrintableFlyerModal
+        isOpen={isFlyerModalOpen}
+        onClose={() => setIsFlyerModalOpen(false)}
+        type="event"
+        title={event.title}
+        description={event.subtitle || event.about}
+        coverImage={getEventCoverImage(event.title, event.id, (liveEvent as any)?.coverImage, event.category)}
+        urlPath={`/events/${rawSlug}`}
+        details={{
+          date: (liveEvent?.date as any) || event.date,
+          location: (liveEvent?.location as any) || event.venue,
+          organizerName: event.host || "LPU Student Welfare (DSW)",
+          price:
+            typeof (liveEvent as any)?.price === "number"
+              ? (liveEvent as any).price
+              : typeof (event as any).price === "number"
+              ? (event as any).price
+              : (event as any).price === "Free"
+              ? 0
+              : parseInt(String((event as any).price || "").replace(/[^\d]/g, ""), 10) || 0,
+          category: event.category,
+        }}
+      />
 
       {/* Footer */}
       <footer className="w-full py-4 text-center text-xs text-muted-foreground border-t border-border/40 bg-muted/20 mt-12">

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationCenter from "@/components/NotificationCenter";
 import { useCampusStore } from "@/lib/store";
 import { getAnimeAvatar } from "@/lib/avatars";
 import { useAuth } from "@/lib/auth-context";
@@ -137,6 +138,9 @@ export default function AppHeader() {
                 <SlidersHorizontal className="w-3.5 h-3.5" />
               </button>
             )}
+
+            {/* Campus Notification Center */}
+            <NotificationCenter />
 
             {/* Dark / Light Theme Toggle */}
             <ThemeToggle />

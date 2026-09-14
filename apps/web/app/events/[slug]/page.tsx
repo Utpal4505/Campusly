@@ -35,6 +35,7 @@ import {
 import { getEventCoverImage } from "@/lib/event-assets";
 import TicketScannerModal from "@/components/TicketScannerModal";
 import PrintableFlyerModal from "@/components/PrintableFlyerModal";
+import SquadFinderSection from "@/components/SquadFinderSection";
 
 export default function EventDetailPage() {
   const router = useRouter();
@@ -765,6 +766,9 @@ export default function EventDetailPage() {
           </div>
 
         </div>
+
+        {/* Hackathon Squad & Teammate Finder */}
+        <SquadFinderSection eventId={event.id} eventTitle={event.title} />
 
       </main>
 

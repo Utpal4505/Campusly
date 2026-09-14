@@ -22,9 +22,11 @@ import {
   Loader2,
   AlertCircle,
   ExternalLink,
+  Award,
 } from "lucide-react";
 
 import QRCodeDisplay from "@/components/QRCodeDisplay";
+import CertificateModal from "@/components/CertificateModal";
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -35,6 +37,7 @@ export default function TicketDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -160,7 +163,8 @@ export default function TicketDetailPage() {
 
         {/* Digital Entrance Pass Card */}
         {ticket && !isLoading && (
-          <div className="relative rounded-3xl border border-border/80 bg-card shadow-xl overflow-hidden print:border-black print:shadow-none">
+          <>
+            <div className="relative rounded-3xl border border-border/80 bg-card shadow-xl overflow-hidden print:border-black print:shadow-none">
             
             {/* Top Pass Header */}
             <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-6 text-white text-center relative overflow-hidden">
@@ -315,6 +319,49 @@ export default function TicketDetailPage() {
             </div>
 
           </div>
+
+          {/* Certificate of Participation Callout Banner */}
+          <div className="mt-5 p-4 sm:p-5 rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent backdrop-blur-sm print:hidden">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-amber-500/20">
+                <Award className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <h3 className="text-sm font-bold text-foreground">
+                    {ticket.status === "CHECKED_IN"
+                      ? "🏆 Official Certificate of Participation Available"
+                      : "Official Certificate of Participation"}
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                    DSW Verified
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                  {ticket.status === "CHECKED_IN"
+                    ? "Your attendance was verified at the gate! Your official Lovely Professional University participation certificate is ready with verified QR code & digital seal."
+                    : "Certificate unlocks automatically upon gate check-in at Block 34 / Unipolis. You can preview the credential layout anytime."}
+                </p>
+                <Button
+                  onClick={() => setIsCertModalOpen(true)}
+                  size="sm"
+                  className="h-8 px-3 rounded-xl text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white shadow-sm cursor-pointer"
+                >
+                  <Award className="w-3.5 h-3.5 mr-1.5" />
+                  {ticket.status === "CHECKED_IN"
+                    ? "View & Download Certificate"
+                    : "Preview Certificate Template"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <CertificateModal
+            isOpen={isCertModalOpen}
+            onClose={() => setIsCertModalOpen(false)}
+            ticket={ticket}
+          />
+        </>
         )}
 
       </main>

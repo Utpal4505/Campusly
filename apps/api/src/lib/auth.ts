@@ -1,3 +1,4 @@
+import '../env.js';
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';

@@ -1,3 +1,4 @@
+import '../env.js';
 import {
   Injectable,
   type OnModuleInit,

@@ -24,6 +24,8 @@ import {
   GraduationCap,
   ShieldCheck,
   Check,
+  ShoppingBag,
+  Compass,
 } from "lucide-react";
 
 export default function AppHeader() {
@@ -67,8 +69,9 @@ export default function AppHeader() {
     { href: "/feed", label: "For You", icon: Sparkles },
     { href: "/events", label: "Events", icon: Calendar },
     { href: "/clubs", label: "Clubs", icon: Building2 },
+    { href: "/marketplace", label: "Marketplace", icon: ShoppingBag },
+    { href: "/map", label: "Campus Map", icon: Compass },
     { href: "/tickets", label: "Tickets", icon: Ticket },
-    { href: "/people", label: "People", icon: Users },
     { href: "/messages", label: "Messages", icon: MessageSquare, badge: "1" },
   ];
 
@@ -218,6 +221,24 @@ export default function AppHeader() {
                     >
                       <Ticket className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>My Event Tickets</span>
+                    </Link>
+
+                    <Link
+                      href="/marketplace"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+                    >
+                      <ShoppingBag className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Campus Marketplace</span>
+                    </Link>
+
+                    <Link
+                      href="/map"
+                      onClick={() => setMenuOpen(false)}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+                    >
+                      <Compass className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Campus Map & Venues</span>
                     </Link>
 
                     {/* Organizer & Club Hub: Scoped strictly to CLUB_LEAD and DSW_ADMIN */}

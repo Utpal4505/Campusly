@@ -41,9 +41,11 @@ import {
   Loader2,
   QrCode,
   SlidersHorizontal,
+  Compass,
 } from "lucide-react";
 import PrintableFlyerModal from "@/components/PrintableFlyerModal";
 import ClubAuditionModal from "@/components/ClubAuditionModal";
+import VenueMapModal from "@/components/VenueMapModal";
 
 interface LeadershipMember {
   role: string;
@@ -392,6 +394,7 @@ export default function ClubDetailPage() {
   const [discordJoined, setDiscordJoined] = useState(false);
   const [isFlyerModalOpen, setIsFlyerModalOpen] = useState(false);
   const [isAuditionModalOpen, setIsAuditionModalOpen] = useState(false);
+  const [isVenueMapOpen, setIsVenueMapOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -1170,6 +1173,16 @@ export default function ClubDetailPage() {
                         </span>
                       </div>
                     </div>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsVenueMapOpen(true)}
+                      className="w-full text-xs font-semibold gap-1.5 cursor-pointer mt-1"
+                    >
+                      <Compass className="w-3.5 h-3.5 text-primary" />
+                      <span>View on Campus Map</span>
+                    </Button>
                   </div>
                 </div>
 
@@ -1487,6 +1500,14 @@ export default function ClubDetailPage() {
         onClose={() => setIsAuditionModalOpen(false)}
         clubIdOrSlug={rawSlug}
         clubName={club.name}
+      />
+
+      {/* Campus Venue Real Map Modal */}
+      <VenueMapModal
+        isOpen={isVenueMapOpen}
+        onClose={() => setIsVenueMapOpen(false)}
+        venueName={club.meetingVenue}
+        venueLandmark={club.venueDirections}
       />
 
       {/* Footer */}

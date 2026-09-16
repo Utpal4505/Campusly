@@ -33,11 +33,15 @@ import {
   QrCode,
   Camera,
   FileSpreadsheet,
+  Radio,
+  Compass,
 } from "lucide-react";
 import { getEventCoverImage } from "@/lib/event-assets";
 import TicketScannerModal from "@/components/TicketScannerModal";
 import PrintableFlyerModal from "@/components/PrintableFlyerModal";
 import SquadFinderSection from "@/components/SquadFinderSection";
+import VenueMapModal from "@/components/VenueMapModal";
+import LiveEventCompanionModal from "@/components/LiveEventCompanionModal";
 
 export default function EventDetailPage() {
   const router = useRouter();
@@ -57,6 +61,8 @@ export default function EventDetailPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFlyerModalOpen, setIsFlyerModalOpen] = useState(false);
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
+  const [isCompanionModalOpen, setIsCompanionModalOpen] = useState(false);
+  const [isVenueMapModalOpen, setIsVenueMapModalOpen] = useState(false);
 
   // Load Razorpay Checkout SDK
   useEffect(() => {
@@ -331,6 +337,16 @@ export default function EventDetailPage() {
             >
               <Camera className="w-3.5 h-3.5" />
               <span>Scan Tickets</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsCompanionModalOpen(true)}
+              className="h-8 px-2.5 sm:px-3 rounded-lg border border-red-500/30 bg-red-500/10 hover:bg-red-500/15 flex items-center gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400 transition-colors cursor-pointer shadow-2xs"
+              title="Interactive Live Stage Companion (Q&A, Polls, Alerts)"
+            >
+              <Radio className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+              <span>Live Companion</span>
             </button>
 
             {canManageEvent(rawSlug) && (
@@ -742,6 +758,16 @@ export default function EventDetailPage() {
                   <span className="font-semibold text-foreground block mb-0.5">Route Guide:</span>
                   {event.venueDirections}
                 </div>
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsVenueMapModalOpen(true)}
+                  className="w-full text-xs font-semibold gap-1.5 cursor-pointer mt-1"
+                >
+                  <Compass className="w-3.5 h-3.5 text-primary" />
+                  <span>View on Campus Map</span>
+                </Button>
               </div>
             </div>
 
@@ -817,6 +843,23 @@ export default function EventDetailPage() {
               : parseInt(String((event as any).price || "").replace(/[^\d]/g, ""), 10) || 0,
           category: event.category,
         }}
+      />
+
+      {/* Campus Venue Real Map Modal */}
+      <VenueMapModal
+        isOpen={isVenueMapModalOpen}
+        onClose={() => setIsVenueMapModalOpen(false)}
+        venueName={event.venue}
+        venueLandmark={event.venueLandmark}
+      />
+
+      {/* Stage Live Companion Modal (Q&A, Polls, Alerts) */}
+      <LiveEventCompanionModal
+        isOpen={isCompanionModalOpen}
+        onClose={() => setIsCompanionModalOpen(false)}
+        eventTitle={event.title}
+        eventSlug={rawSlug}
+        isOrganizer={canManageEvent(rawSlug)}
       />
 
       {/* Footer */}
